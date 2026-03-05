@@ -6,7 +6,21 @@ import { CartDrawer } from "@/components/storefront/CartDrawer";
 import { useProducts } from "@/hooks/use-products";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const CATEGORIES = ["All", "Fish", "Prawns", "Chicken", "Mutton", "Masalas"];
+import fishImg from "@assets/Gemini_Generated_Image_w6wqkkw6wqkkw6wq_(1)_1772713077919.png";
+import prawnsImg from "@assets/Gemini_Generated_Image_5xy0sd5xy0sd5xy0_1772713090650.png";
+import chickenImg from "@assets/Gemini_Generated_Image_g0ecb4g0ecb4g0ec_1772713219972.png";
+import muttonImg from "@assets/Gemini_Generated_Image_8fq0338fq0338fq0_1772713565349.png";
+import masalaImg from "@assets/Gemini_Generated_Image_4e60a64e60a64e60_1772713888468.png";
+import allImg from "@assets/Gemini_Generated_Image_s0odfms0odfms0od_1772714896015.png";
+
+const CATEGORIES = [
+  { name: "All", image: allImg },
+  { name: "Fish", image: fishImg },
+  { name: "Prawns", image: prawnsImg },
+  { name: "Chicken", image: chickenImg },
+  { name: "Mutton", image: muttonImg },
+  { name: "Masalas", image: masalaImg },
+];
 
 export default function Home() {
   const { data: products, isLoading } = useProducts();
@@ -26,7 +40,7 @@ export default function Home() {
       
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hero Section */}
-        <div className="relative overflow-hidden rounded-3xl bg-primary text-primary-foreground p-8 sm:p-12 mb-8 shadow-2xl shadow-primary/20">
+        <div className="relative overflow-hidden rounded-3xl bg-primary text-primary-foreground p-8 sm:p-12 mb-12 shadow-2xl shadow-primary/20">
           <div className="relative z-10">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/20 text-sm font-medium mb-6">
               <span className="relative flex h-2 w-2">
@@ -43,23 +57,32 @@ export default function Home() {
             </p>
           </div>
           {/* Decorative shapes */}
-          <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-gradient-to-br from-blue-400/40 to-transparent rounded-full blur-3xl"></div>
+          <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-gradient-to-br from-white/10 to-transparent rounded-full blur-3xl"></div>
           <div className="absolute bottom-0 right-20 -mb-20 w-64 h-64 bg-gradient-to-tr from-accent/30 to-transparent rounded-full blur-3xl"></div>
         </div>
 
-        {/* Categories */}
-        <div className="flex overflow-x-auto pb-4 mb-4 gap-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
+        {/* Category Cards - 2x2 on mobile, responsive grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-12">
           {CATEGORIES.map((cat) => (
             <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`whitespace-nowrap px-6 py-2.5 rounded-full font-semibold transition-all duration-300 ${
-                activeCategory === cat
-                  ? "bg-foreground text-background shadow-lg scale-105"
-                  : "bg-white text-muted-foreground border border-border/60 hover:border-foreground/30 hover:text-foreground hover:bg-secondary/50"
+              key={cat.name}
+              onClick={() => setActiveCategory(cat.name)}
+              className={`group relative aspect-square rounded-2xl overflow-hidden border-2 transition-all duration-300 ${
+                activeCategory === cat.name
+                  ? "border-accent ring-4 ring-accent/20 scale-[1.02] shadow-xl"
+                  : "border-transparent grayscale hover:grayscale-0 hover:border-accent/30"
               }`}
             >
-              {cat}
+              <img 
+                src={cat.image} 
+                alt={cat.name} 
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end justify-center pb-4">
+                <span className="text-white font-display font-bold text-lg sm:text-xl drop-shadow-md">
+                  {cat.name}
+                </span>
+              </div>
             </button>
           ))}
         </div>
