@@ -36,11 +36,6 @@ export function ProductCard({ product }: { product: Product }) {
         />
         
         <div className="absolute top-2 left-2 flex flex-col gap-1">
-          {product.status === "available" && (
-            <Badge variant="outline" className="bg-emerald-500/90 backdrop-blur text-white border-none shadow-sm py-0.5 text-[10px] h-5">
-              Available
-            </Badge>
-          )}
           {product.status === "limited" && (
             <Badge variant="outline" className="bg-amber-500/90 backdrop-blur text-white border-none shadow-sm py-0.5 text-[10px] h-5">
               Limited
@@ -65,14 +60,13 @@ export function ProductCard({ product }: { product: Product }) {
 
       <div className="flex-1 flex flex-col px-1">
         <div className="text-[10px] font-bold text-primary/80 mb-0.5 uppercase tracking-wider">{product.category}</div>
-        <h3 className="font-sans font-bold text-sm text-foreground leading-tight mb-1 line-clamp-2">
+        <h3 className="font-sans font-medium text-sm text-foreground leading-tight mb-1 line-clamp-2">
           {product.name}
         </h3>
         
         <div className="flex items-center justify-between mt-auto pt-2">
           <div className="flex flex-col">
-            <span className="text-base font-black text-foreground">₹{product.price}</span>
-            <span className="text-[10px] font-medium text-muted-foreground -mt-1">{product.unit || "item"}</span>
+            <span className="text-base font-bold text-foreground">₹{product.price}</span>
           </div>
           <Button
             onClick={() => addToCart(product)}
