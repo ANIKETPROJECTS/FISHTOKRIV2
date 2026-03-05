@@ -9,6 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import fishImg from "@assets/Gemini_Generated_Image_w6wqkkw6wqkkw6wq_(1)_1772713077919.png";
+import prawnsImg from "@assets/Gemini_Generated_Image_5xy0sd5xy0sd5xy0_1772713090650.png";
+import chickenImg from "@assets/Gemini_Generated_Image_g0ecb4g0ecb4g0ec_1772713219972.png";
+import muttonImg from "@assets/Gemini_Generated_Image_8fq0338fq0338fq0_1772713565349.png";
+import masalaImg from "@assets/Gemini_Generated_Image_4e60a64e60a64e60_1772713888468.png";
 import {
   Select,
   SelectContent,
@@ -27,6 +32,7 @@ const checkoutSchema = z.object({
   customerName: z.string().min(2, "Full name is required"),
   phone: z.string().min(10, "10-digit mobile number required").max(10, "10-digit mobile number required"),
   deliveryArea: z.string().min(1, "Delivery area is required"),
+  address: z.string().min(5, "Full address is required"),
   notes: z.string().optional(),
 });
 
@@ -42,12 +48,23 @@ export function CartDrawer() {
   const { mutate: createOrder, isPending } = useCreateOrder();
   const [isSuccess, setIsSuccess] = useState(false);
 
+  const getFallbackImage = (category: string) => {
+    switch (category) {
+      case "Prawns": return prawnsImg;
+      case "Chicken": return chickenImg;
+      case "Mutton": return muttonImg;
+      case "Masalas": return masalaImg;
+      default: return fishImg;
+    }
+  };
+
   const form = useForm<CheckoutData>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
       customerName: "",
       phone: "",
       deliveryArea: "",
+      address: "",
       notes: "",
     },
   });
@@ -122,11 +139,11 @@ export function CartDrawer() {
                   <div className="space-y-4">
                     {items.map((item) => (
                       <div key={item.id} className="flex items-center gap-4 bg-white p-3 rounded-2xl border border-slate-100 shadow-sm transition-all hover:shadow-md">
-                        <div className="w-20 h-20 rounded-xl bg-slate-50 overflow-hidden flex-shrink-0 border border-slate-100 p-1">
+                        <div className="w-20 h-20 rounded-xl bg-slate-50 overflow-hidden flex-shrink-0 border border-slate-100 p-1 flex items-center justify-center">
                           {item.imageUrl ? (
                             <img src={item.imageUrl} alt={item.name} className="w-full h-full object-contain" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-blue-50/50 text-3xl">🐟</div>
+                            <img src={getFallbackImage(item.category)} alt={item.name} className="w-full h-full object-contain" />
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -179,8 +196,14 @@ export function CartDrawer() {
                       </div>
 
                       <div className="space-y-1.5">
+                        <Label htmlFor="address" className="text-slate-600 font-semibold ml-1">Address (House/Flat, Street, Area)</Label>
+                        <Textarea id="address" placeholder="Enter your complete address" className="min-h-[80px] resize-none rounded-xl bg-slate-50 border-slate-100 focus:bg-white transition-colors p-4" {...form.register("address")} />
+                        {form.formState.errors.address && <p className="text-xs font-medium text-red-500 ml-1 mt-1">{form.formState.errors.address.message}</p>}
+                      </div>
+
+                      <div className="space-y-1.5">
                         <Label htmlFor="notes" className="text-slate-600 font-semibold ml-1">Special Instructions (Optional)</Label>
-                        <Textarea id="notes" placeholder="e.g. Cut into small pieces" className="min-h-[100px] resize-none rounded-xl bg-slate-50 border-slate-100 focus:bg-white transition-colors p-4" {...form.register("notes")} />
+                        <Textarea id="notes" placeholder="e.g. Cut into small pieces" className="min-h-[80px] resize-none rounded-xl bg-slate-50 border-slate-100 focus:bg-white transition-colors p-4" {...form.register("notes")} />
                       </div>
                     </form>
                   </div>

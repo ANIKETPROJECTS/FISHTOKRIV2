@@ -27,6 +27,7 @@ export const orderRequests = pgTable("order_requests", {
   customerName: text("customer_name").notNull(),
   phone: text("phone").notNull(),
   deliveryArea: text("delivery_area").notNull(),
+  address: text("address").notNull(), // House/Flat, Street, Area
   items: jsonb("items").notNull(), // Array of { productId, quantity, name, price }
   status: text("status").notNull().default("pending"), // 'pending', 'confirmed', 'out_for_delivery', 'delivered'
   notes: text("notes"),
