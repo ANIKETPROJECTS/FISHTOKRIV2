@@ -19,12 +19,12 @@ import banner1 from "@assets/Gemini_Generated_Image_1kjxqr1kjxqr1kjx_17727181182
 import banner2 from "@assets/Gemini_Generated_Image_npjzn2npjzn2npjz_1772718125998.png";
 
 const CATEGORIES = [
-  { name: "All", image: fishImg },
+  { name: "All", image: allImg },
   { name: "Fish", image: fishImg },
-  { name: "Prawns", image: fishImg },
-  { name: "Chicken", image: fishImg },
-  { name: "Mutton", image: fishImg },
-  { name: "Masalas", image: fishImg },
+  { name: "Prawns", image: prawnsImg },
+  { name: "Chicken", image: chickenImg },
+  { name: "Mutton", image: muttonImg },
+  { name: "Masalas", image: masalaImg },
 ];
 
 const BANNERS = [banner1, banner2];

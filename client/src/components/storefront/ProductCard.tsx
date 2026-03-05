@@ -5,16 +5,30 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useCart } from "@/context/CartContext";
 import type { Product } from "@shared/schema";
 import fishImg from "@assets/Gemini_Generated_Image_w6wqkkw6wqkkw6wq_(1)_1772713077919.png";
+import prawnsImg from "@assets/Gemini_Generated_Image_5xy0sd5xy0sd5xy0_1772713090650.png";
+import chickenImg from "@assets/Gemini_Generated_Image_g0ecb4g0ecb4g0ec_1772713219972.png";
+import muttonImg from "@assets/Gemini_Generated_Image_8fq0338fq0338fq0_1772713565349.png";
+import masalaImg from "@assets/Gemini_Generated_Image_4e60a64e60a64e60_1772713888468.png";
 
 export function ProductCard({ product }: { product: Product }) {
   const { addToCart } = useCart();
   const isUnavailable = product.status === "unavailable";
 
+  const getFallbackImage = (category: string) => {
+    switch (category) {
+      case "Prawns": return prawnsImg;
+      case "Chicken": return chickenImg;
+      case "Mutton": return muttonImg;
+      case "Masalas": return masalaImg;
+      default: return fishImg;
+    }
+  };
+
   return (
     <div className="group relative bg-card flex flex-col h-full transition-all duration-300">
       <div className="relative aspect-square w-full bg-muted/30 overflow-hidden mb-3 border border-border/20 rounded-xl">
         <img
-          src={product.imageUrl || fishImg}
+          src={product.imageUrl || getFallbackImage(product.category)}
           alt={product.name}
           className={`w-full h-full object-cover transition-transform duration-700 ${
             isUnavailable ? "grayscale opacity-60" : "group-hover:scale-110"
