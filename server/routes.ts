@@ -147,17 +147,68 @@ async function seedDatabase() {
   const existingProducts = await storage.getProducts();
   if (existingProducts.length === 0) {
     const defaultProducts = [
+      // FISH
       { name: "Silver Pomfret", category: "Fish", status: "available", price: 1200, unit: "per kg" },
+      { name: "Black Pomfret", category: "Fish", status: "available", price: 1100, unit: "per kg" },
+      { name: "Khapri Pomfret", category: "Fish", status: "available", price: 1000, unit: "per kg" },
       { name: "Surmai", category: "Fish", status: "available", price: 900, unit: "per kg" },
-      { name: "Tiger Prawn", category: "Prawns", status: "available", price: 800, unit: "per kg" },
+      { name: "Rawas", category: "Fish", status: "available", price: 950, unit: "per kg" },
+      { name: "Lady Fish", category: "Fish", status: "available", price: 600, unit: "per kg" },
+      { name: "Bombil", category: "Fish", status: "available", price: 400, unit: "per kg" },
+      { name: "Bangda", category: "Fish", status: "available", price: 350, unit: "per kg" },
+      { name: "Tarli", category: "Fish", status: "available", price: 300, unit: "per kg" },
+      { name: "Karli", category: "Fish", status: "available", price: 450, unit: "per kg" },
+      { name: "Shark", category: "Fish", status: "available", price: 550, unit: "per kg" },
+      { name: "Catla", category: "Fish", status: "available", price: 300, unit: "per kg" },
+      { name: "Tuna", category: "Fish", status: "available", price: 500, unit: "per kg" },
+      { name: "Ghol", category: "Fish", status: "available", price: 1500, unit: "per kg" },
+      { name: "Jitada", category: "Fish", status: "available", price: 800, unit: "per kg" },
+      { name: "Vaam", category: "Fish", status: "available", price: 700, unit: "per kg" },
+      { name: "Indian Basa", category: "Fish", status: "available", price: 400, unit: "per kg" },
+      { name: "Rohu", category: "Fish", status: "available", price: 300, unit: "per kg" },
+      
+      // PRAWNS
+      { name: "White Prawn", category: "Prawns", status: "available", price: 700, unit: "per kg" },
+      { name: "Red Prawn", category: "Prawns", status: "available", price: 750, unit: "per kg" },
+      { name: "Tiger Prawn", category: "Prawns", status: "available", price: 1200, unit: "per kg" },
+      { name: "Freshwater Prawn", category: "Prawns", status: "available", price: 650, unit: "per kg" },
+      { name: "Scampi Prawn", category: "Prawns", status: "available", price: 900, unit: "per kg" },
+      { name: "Lobsters", category: "Prawns", status: "available", price: 2500, unit: "per kg" },
+      { name: "Kardi", category: "Prawns", status: "available", price: 400, unit: "per kg" },
+      { name: "Jumbo Prawn", category: "Prawns", status: "available", price: 1500, unit: "per kg" },
+
+      // CHICKEN
       { name: "Chicken Curry Cut", category: "Chicken", status: "available", price: 250, unit: "per kg" },
+      { name: "Chicken Breast", category: "Chicken", status: "available", price: 350, unit: "per kg" },
+      { name: "Chicken Boneless Cubes", category: "Chicken", status: "available", price: 400, unit: "per kg" },
+      { name: "Chicken Whole Leg", category: "Chicken", status: "available", price: 300, unit: "per kg" },
+      { name: "Chicken Drumstick", category: "Chicken", status: "available", price: 350, unit: "per kg" },
+      { name: "Chicken Lollipop", category: "Chicken", status: "available", price: 300, unit: "per 10pcs" },
+      { name: "Chicken Kheema", category: "Chicken", status: "available", price: 450, unit: "per kg" },
+      { name: "Chicken Liver", category: "Chicken", status: "available", price: 150, unit: "per kg" },
+
+      // MUTTON
       { name: "Goat Curry Cut", category: "Mutton", status: "available", price: 850, unit: "per kg" },
-      { name: "Fish Fry Masala", category: "Masalas", status: "limited", limitedStockNote: "Only 5 packets left", price: 50, unit: "per piece" },
+      { name: "Goat Shoulder Cut", category: "Mutton", status: "available", price: 900, unit: "per kg" },
+      { name: "Goat Boneless", category: "Mutton", status: "available", price: 1100, unit: "per kg" },
+      { name: "Goat Liver", category: "Mutton", status: "available", price: 850, unit: "per kg" },
+      { name: "Goat Kheema", category: "Mutton", status: "available", price: 950, unit: "per kg" },
+      { name: "Goat Paya", category: "Mutton", status: "available", price: 400, unit: "per 4pcs" },
+      { name: "Goat Brain", category: "Mutton", status: "available", price: 250, unit: "per pc" },
+      { name: "Goat Biryani Cut", category: "Mutton", status: "available", price: 850, unit: "per kg" },
+
+      // MASALAS
+      { name: "Fish Curry Masala", category: "Masalas", status: "available", price: 50, unit: "per pc" },
+      { name: "Fish Fry Masala", category: "Masalas", status: "available", price: 50, unit: "per pc" },
+      { name: "Malvani Masala", category: "Masalas", status: "available", price: 100, unit: "per 100g" },
+      { name: "Special Chicken Masala", category: "Masalas", status: "available", price: 60, unit: "per pc" },
+      { name: "Special Mutton Masala", category: "Masalas", status: "available", price: 60, unit: "per pc" },
+      { name: "Koliwada Masala", category: "Masalas", status: "available", price: 70, unit: "per pc" },
     ];
     
     for (const product of defaultProducts) {
       await storage.createProduct(product as any);
     }
-    console.log("Seeded database with initial products.");
+    console.log("Seeded database with all FishTokri products.");
   }
 }

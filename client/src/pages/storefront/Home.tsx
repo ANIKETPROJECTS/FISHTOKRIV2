@@ -7,7 +7,7 @@ import { useProducts } from "@/hooks/use-products";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
 
 import fishImg from "@assets/Gemini_Generated_Image_w6wqkkw6wqkkw6wq_(1)_1772713077919.png";
 import prawnsImg from "@assets/Gemini_Generated_Image_5xy0sd5xy0sd5xy0_1772713090650.png";
@@ -33,20 +33,21 @@ export default function Home() {
   const { data: products, isLoading } = useProducts();
   const [activeCategory, setActiveCategory] = useState("All");
   const [currentBanner, setCurrentBanner] = useState(0);
-  const [, setLocation] = useLocation();
+  const [view, setView] = useState<"home" | "category">("home");
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentBanner((prev) => (prev + 1) % BANNERS.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, []);
+    if (view === "home") {
+      const timer = setInterval(() => {
+        setCurrentBanner((prev) => (prev + 1) % BANNERS.length);
+      }, 5000);
+      return () => clearInterval(timer);
+    }
+  }, [view]);
 
   const handleCategoryClick = (catName: string) => {
     setActiveCategory(catName);
-    // Open category in new view/filter (as requested "new page" feel but keeping SPA for now or we could navigate)
-    // For now, we'll just scroll to top of products as a "new view"
-    window.scrollTo({ top: 800, behavior: 'smooth' });
+    setView("category");
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const filteredProducts = products?.filter((p) => {
@@ -58,6 +59,28 @@ export default function Home() {
   const getSectionProducts = (category: string) => {
     return products?.filter(p => !p.isArchived && (category === "Today's Special" ? true : p.category === category)).slice(0, 6) || [];
   };
+
+  if (view === "category") {
+    return (
+      <div className="min-h-screen bg-background flex flex-col font-sans">
+        <Header />
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center gap-4 mb-8">
+            <Button variant="ghost" size="icon" onClick={() => setView("home")} className="rounded-full">
+              <ChevronLeft className="w-6 h-6" />
+            </Button>
+            <h2 className="text-3xl font-bold text-foreground">{activeCategory} Selection</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {isLoading ? [1,2,3,4,5,6,7,8].map(i => <Skeleton key={i} className="aspect-[3/4] rounded-3xl" />) :
+              filteredProducts.map(product => <ProductCard key={product.id} product={product} />)
+            }
+          </div>
+        </main>
+        <CartDrawer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col font-sans">
@@ -74,31 +97,15 @@ export default function Home() {
               <img src={banner} alt={`Banner ${index + 1}`} className="w-full h-full object-cover" />
             </div>
           ))}
-          <button 
-            onClick={() => setCurrentBanner((prev) => (prev - 1 + BANNERS.length) % BANNERS.length)}
-            className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 backdrop-blur-md p-2 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <ChevronLeft className="w-6 h-6" />
-          </button>
-          <button 
-            onClick={() => setCurrentBanner((prev) => (prev + 1) % BANNERS.length)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 backdrop-blur-md p-2 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <ChevronRight className="w-6 h-6" />
-          </button>
         </div>
 
-        {/* Category Grid - Colorful cards with text below */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 mb-12">
+        {/* Category Grid - 2x2 on mobile, colorful cards with text below */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6 mb-12">
           {CATEGORIES.map((cat) => (
             <div key={cat.name} className="flex flex-col items-center group">
               <button
                 onClick={() => handleCategoryClick(cat.name)}
-                className={`relative aspect-square w-full rounded-2xl overflow-hidden border-2 transition-all duration-300 ${
-                  activeCategory === cat.name
-                    ? "border-accent ring-4 ring-accent/20 scale-[1.05] shadow-xl"
-                    : "border-transparent hover:border-accent/30"
-                }`}
+                className="relative aspect-square w-full rounded-2xl overflow-hidden border-2 border-transparent transition-all duration-300 hover:scale-105 hover:shadow-xl"
               >
                 <img 
                   src={cat.image} 
@@ -106,7 +113,7 @@ export default function Home() {
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
                 />
               </button>
-              <span className={`mt-3 font-semibold text-lg ${activeCategory === cat.name ? "text-accent" : "text-foreground"}`}>
+              <span className="mt-2 font-bold text-base sm:text-lg text-foreground">
                 {cat.name}
               </span>
             </div>
@@ -116,12 +123,12 @@ export default function Home() {
         {/* Today's Special Section */}
         <section className="mb-12">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-foreground uppercase tracking-wide">FishTokri Today's Special</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-foreground uppercase tracking-wide">FishTokri Today's Special</h2>
           </div>
-          <div className="flex overflow-x-auto pb-4 gap-6 scrollbar-hide snap-x">
-            {isLoading ? [1,2,3,4,5,6].map(i => <Skeleton key={i} className="min-w-[280px] h-[380px] rounded-3xl" />) :
+          <div className="flex overflow-x-auto pb-4 gap-4 sm:gap-6 scrollbar-hide snap-x">
+            {isLoading ? [1,2,3,4,5,6].map(i => <Skeleton key={i} className="min-w-[240px] sm:min-w-[280px] h-[340px] sm:h-[380px] rounded-3xl" />) :
               getSectionProducts("Today's Special").map(product => (
-                <div key={product.id} className="min-w-[280px] snap-start">
+                <div key={product.id} className="min-w-[240px] sm:min-w-[280px] snap-start">
                   <ProductCard product={product} />
                 </div>
               ))
@@ -133,13 +140,13 @@ export default function Home() {
         {["Fish", "Prawns", "Chicken", "Mutton"].map((category) => (
           <section key={category} className="mb-12">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-foreground uppercase tracking-wide">{category} Specials</h2>
-              <Button variant="link" className="text-accent font-bold">View More</Button>
+              <h2 className="text-xl sm:text-2xl font-bold text-foreground uppercase tracking-wide">{category} Specials</h2>
+              <Button variant="link" onClick={() => handleCategoryClick(category)} className="text-accent font-bold p-0">View More</Button>
             </div>
-            <div className="flex overflow-x-auto pb-4 gap-6 scrollbar-hide snap-x">
-              {isLoading ? [1,2,3,4,5,6].map(i => <Skeleton key={i} className="min-w-[280px] h-[380px] rounded-3xl" />) :
+            <div className="flex overflow-x-auto pb-4 gap-4 sm:gap-6 scrollbar-hide snap-x">
+              {isLoading ? [1,2,3,4,5,6].map(i => <Skeleton key={i} className="min-w-[240px] sm:min-w-[280px] h-[340px] sm:h-[380px] rounded-3xl" />) :
                 getSectionProducts(category).map(product => (
-                  <div key={product.id} className="min-w-[280px] snap-start">
+                  <div key={product.id} className="min-w-[240px] sm:min-w-[280px] snap-start">
                     <ProductCard product={product} />
                   </div>
                 ))
@@ -147,19 +154,6 @@ export default function Home() {
             </div>
           </section>
         ))}
-
-        {/* Main Grid for Filtered View (if user wanted a new page, we can show this when a category is selected) */}
-        {activeCategory !== "All" && (
-          <section className="mt-12 pt-12 border-t border-border/50">
-             <div className="flex items-center justify-between mb-8">
-               <h2 className="text-3xl font-bold text-foreground">{activeCategory} Selection</h2>
-               <Button onClick={() => setActiveCategory("All")} variant="outline">Back to Home</Button>
-             </div>
-             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-               {filteredProducts.map(product => <ProductCard key={product.id} product={product} />)}
-             </div>
-          </section>
-        )}
       </main>
 
       <CartDrawer />

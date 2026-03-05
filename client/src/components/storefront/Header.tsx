@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { ShoppingBag, Fish, LayoutDashboard } from "lucide-react";
+import { ShoppingBag, User } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 
@@ -18,23 +18,22 @@ export function Header() {
           </span>
         </Link>
 
-        <div className="flex items-center gap-2 sm:gap-4">
-          <Link href="/admin" className="hidden sm:inline-flex">
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-              <LayoutDashboard className="w-4 h-4 mr-2" />
-              Admin
+        <div className="flex items-center gap-2 sm:gap-6">
+          <Link href="/admin">
+            <Button variant="ghost" size="icon" className="text-foreground hover:bg-accent/10 rounded-full">
+              <User className="w-6 h-6" />
             </Button>
           </Link>
           
           <Button
             onClick={() => setIsCartOpen(true)}
-            variant="outline"
-            className="relative border-primary/20 hover:border-primary/40 bg-white/50"
+            variant="ghost"
+            size="icon"
+            className="relative text-foreground hover:bg-accent/10 rounded-full"
           >
-            <ShoppingBag className="w-5 h-5 text-primary mr-2" />
-            <span className="font-semibold text-foreground">Order</span>
+            <ShoppingBag className="w-6 h-6" />
             {totalItems > 0 && (
-              <span className="absolute -top-2 -right-2 w-6 h-6 bg-accent text-white text-xs font-bold flex items-center justify-center rounded-full shadow-md animate-in zoom-in">
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-accent text-white text-[10px] font-bold flex items-center justify-center rounded-full shadow-md animate-in zoom-in">
                 {totalItems}
               </span>
             )}
