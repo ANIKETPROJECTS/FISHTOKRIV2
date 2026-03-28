@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getDummyDetail, getStrikePrice } from "@/lib/productDummyData";
 import {
-  ChevronLeft, Plus, Minus, Copy, Check, Tag, Utensils, Clock, ChefHat, Flame,
+  ChevronLeft, Plus, Minus, Copy, Check, Tag, Utensils, ChefHat, Flame,
 } from "lucide-react";
 import { useState } from "react";
 import type { Product } from "@shared/schema";
@@ -54,20 +54,35 @@ function CouponCard({ code, desc, color }: { code: string; desc: string; color: 
   );
 }
 
-function RecipeCard({ name, time, difficulty, emoji }: { name: string; time: string; difficulty: string; emoji: string }) {
-  const diffColor =
-    difficulty === "Easy" ? "bg-green-100 text-green-700" :
-    difficulty === "Hard" ? "bg-red-100 text-red-700" :
-    "bg-yellow-100 text-yellow-700";
+function RecipeCard({
+  recipe, category, index, onViewRecipe,
+}: {
+  recipe: { name: string; description: string; image: string; totalTime: string; difficulty: string };
+  category: string;
+  index: number;
+  onViewRecipe: (category: string, index: number) => void;
+}) {
   return (
-    <div className="bg-card border border-border/30 rounded-2xl p-4 flex flex-col gap-3 hover:shadow-md transition-shadow">
-      <div className="text-4xl text-center">{emoji}</div>
-      <h4 className="font-semibold text-sm text-foreground text-center leading-tight">{name}</h4>
-      <div className="flex items-center justify-between mt-auto">
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <Clock className="w-3 h-3" /> {time}
+    <div className="min-w-[240px] sm:min-w-[260px] snap-start bg-card border border-border/30 rounded-2xl overflow-hidden hover:shadow-md transition-shadow flex flex-col">
+      <div className="w-full h-44 overflow-hidden bg-muted/20">
+        <img
+          src={recipe.image}
+          alt={recipe.name}
+          className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+        />
+      </div>
+      <div className="p-4 flex flex-col flex-1 gap-2">
+        <h4 className="font-bold text-sm text-foreground leading-snug line-clamp-2">{recipe.name}</h4>
+        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3 flex-1">{recipe.description}</p>
+        <div className="flex items-center justify-between mt-2">
+          <span className="text-xs text-muted-foreground">⏱ {recipe.totalTime}</span>
+          <button
+            onClick={() => onViewRecipe(category, index)}
+            className="text-xs font-semibold text-accent border border-accent rounded-full px-3 py-1 hover:bg-accent hover:text-white transition-colors"
+          >
+            View Recipe
+          </button>
         </div>
-        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${diffColor}`}>{difficulty}</span>
       </div>
     </div>
   );
@@ -259,9 +274,15 @@ export default function ProductDetail() {
             <ChefHat className="w-5 h-5 text-accent" />
             <h2 className="text-xl font-bold text-foreground">Explore New Recipes</h2>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {dummy.recipes.map((r) => (
-              <RecipeCard key={r.name} {...r} />
+          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
+            {dummy.recipes.map((r, idx) => (
+              <RecipeCard
+                key={r.name}
+                recipe={r}
+                category={product.category}
+                index={idx}
+                onViewRecipe={(cat, i) => setLocation(`/recipe/${encodeURIComponent(cat)}/${i}`)}
+              />
             ))}
           </div>
         </section>
