@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, type RefObject } from "react";
+import { Link } from "wouter";
 import { Header } from "@/components/storefront/Header";
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { CartDrawer } from "@/components/storefront/CartDrawer";
@@ -7,8 +8,10 @@ import { useProducts } from "@/hooks/use-products";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useCart } from "@/context/CartContext";
 import { useLocation } from "wouter";
 import { ChevronLeft, Search, Tag } from "lucide-react";
+import { COMBOS_DATA } from "@/pages/storefront/ComboDetail";
 
 import fishImg from "@assets/Gemini_Generated_Image_w6wqkkw6wqkkw6wq_(1)_1772713077919.png";
 import prawnsImg from "@assets/Gemini_Generated_Image_5xy0sd5xy0sd5xy0_1772713090650.png";
@@ -31,61 +34,15 @@ const CATEGORIES = [
 
 const BANNERS = [banner1, banner2];
 
-const COMBOS = [
-  {
-    id: "c1",
-    name: "Sea Treasure Pack",
-    description: "Silver Pomfret 500g + White Prawns 500g",
-    originalPrice: 1900,
-    discountedPrice: 1599,
-    discount: 16,
-    images: [fishImg, prawnsImg],
-  },
-  {
-    id: "c2",
-    name: "Family Feast Combo",
-    description: "Chicken Curry Cut 1kg + Goat Curry Cut 500g",
-    originalPrice: 1100,
-    discountedPrice: 899,
-    discount: 18,
-    images: [chickenImg, muttonImg],
-  },
-  {
-    id: "c3",
-    name: "Weekend Special",
-    description: "Surmai 500g + Tiger Prawns 250g + Masala",
-    originalPrice: 2200,
-    discountedPrice: 1799,
-    discount: 18,
-    images: [fishImg, masalaImg],
-  },
-  {
-    id: "c4",
-    name: "Quick Meal Combo",
-    description: "Chicken Boneless 500g + Fish Fry Masala",
-    originalPrice: 500,
-    discountedPrice: 399,
-    discount: 20,
-    images: [chickenImg, masalaImg],
-  },
-  {
-    id: "c5",
-    name: "Prawns Delight",
-    description: "Tiger Prawns 500g + Koliwada Masala",
-    originalPrice: 1370,
-    discountedPrice: 1099,
-    discount: 20,
-    images: [prawnsImg, masalaImg],
-  },
-];
-
 export default function Home() {
   const { data: products, isLoading } = useProducts();
+  const { addToCart } = useCart();
   const [activeCategory, setActiveCategory] = useState("All");
   const [currentBanner, setCurrentBanner] = useState(0);
   const [view, setView] = useState<"home" | "category">("home");
   const [searchQuery, setSearchQuery] = useState("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [, navigate] = useLocation();
 
   const catScrollRef = useRef<HTMLDivElement>(null);
   const comboScrollRef = useRef<HTMLDivElement>(null);
@@ -241,30 +198,60 @@ export default function Home() {
             <span className="text-xs font-semibold text-white bg-accent px-2.5 py-1 rounded-full">Save More</span>
           </div>
           <div ref={comboScrollRef} className="flex overflow-x-auto gap-4 sm:gap-5 scrollbar-hide snap-x">
-            {COMBOS.map(combo => (
-              <div key={combo.id} className="min-w-[220px] sm:min-w-[260px] snap-start flex-none">
+            {COMBOS_DATA.map(combo => (
+              <div key={combo.id} className="min-w-[220px] sm:min-w-[240px] snap-start flex-none">
                 <div className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                  {/* Images side by side */}
-                  <div className="relative flex h-36 bg-slate-50">
-                    <div className="w-1/2 overflow-hidden">
-                      <img src={combo.images[0]} alt="" className="w-full h-full object-cover" />
+                  {/* Stacked overlapping images on colored bg */}
+                  <Link href={`/combo/${combo.id}`}>
+                    <div className="h-32 bg-slate-50 flex items-center justify-center relative cursor-pointer">
+                      <div className="flex items-center">
+                        {combo.images.map((img, i) => (
+                          <div
+                            key={i}
+                            className="w-20 h-20 rounded-full overflow-hidden border-3 border-white shadow-md"
+                            style={{
+                              marginLeft: i > 0 ? -22 : 0,
+                              zIndex: combo.images.length - i,
+                              position: "relative",
+                              border: "3px solid white",
+                            }}
+                          >
+                            <img src={img} alt="" className="w-full h-full object-cover" />
+                          </div>
+                        ))}
+                      </div>
+                      <div className="absolute top-2 left-2 bg-accent text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow">
+                        {combo.discount}% OFF
+                      </div>
                     </div>
-                    <div className="w-1/2 overflow-hidden border-l border-white/50">
-                      <img src={combo.images[1]} alt="" className="w-full h-full object-cover" />
-                    </div>
-                    <div className="absolute top-2 left-2 bg-accent text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow">
-                      {combo.discount}% OFF
-                    </div>
-                  </div>
-                  <div className="p-3.5">
-                    <h3 className="font-semibold text-foreground text-sm leading-tight">{combo.name}</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{combo.description}</p>
-                    <div className="flex items-center justify-between mt-3">
+                  </Link>
+                  <div className="p-3">
+                    <Link href={`/combo/${combo.id}`}>
+                      <h3 className="font-semibold text-foreground text-sm leading-tight truncate cursor-pointer hover:text-primary">{combo.name}</h3>
+                    </Link>
+                    <p className="text-xs text-muted-foreground mt-0.5 truncate">{combo.description}</p>
+                    <div className="flex items-center justify-between mt-2.5">
                       <div>
-                        <span className="text-base font-bold text-primary">₹{combo.discountedPrice}</span>
+                        <span className="text-sm font-bold text-primary">₹{combo.discountedPrice}</span>
                         <span className="text-xs text-muted-foreground line-through ml-1.5">₹{combo.originalPrice}</span>
                       </div>
-                      <button className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-xl font-light hover:bg-primary/90 transition-colors shadow-md shadow-primary/20">
+                      <button
+                        onClick={() => addToCart({
+                          id: combo.cartId,
+                          name: combo.name,
+                          price: combo.discountedPrice,
+                          category: "Combo",
+                          status: "available",
+                          unit: combo.weight,
+                          imageUrl: null,
+                          isArchived: false,
+                          updatedAt: new Date(),
+                          limitedStockNote: null,
+                          isCombo: true,
+                        } as any)}
+                        className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-xl font-light hover:bg-primary/90 transition-colors shadow-md shadow-primary/20"
+                        data-testid={`button-add-combo-${combo.id}`}
+                      >
                         +
                       </button>
                     </div>

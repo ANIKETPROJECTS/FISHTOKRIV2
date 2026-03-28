@@ -2,15 +2,19 @@ import { createContext, useContext, useState, ReactNode } from "react";
 import type { Product } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
-export interface CartItem extends Product {
+export interface CartItem extends Omit<Product, 'id'> {
+  id: number;
   quantity: number;
+  instruction?: string;
+  isCombo?: boolean;
 }
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (product: Product, quantity?: number) => void;
+  addToCart: (product: Product | CartItem, quantity?: number) => void;
   removeFromCart: (productId: number) => void;
   updateQuantity: (productId: number, quantity: number) => void;
+  updateInstruction: (productId: number, instruction: string) => void;
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
@@ -25,7 +29,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const { toast } = useToast();
 
-  const addToCart = (product: Product, quantity = 1) => {
+  const addToCart = (product: Product | CartItem, quantity = 1) => {
     setItems((current) => {
       const existing = current.find((i) => i.id === product.id);
       if (existing) {
@@ -57,6 +61,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const updateInstruction = (productId: number, instruction: string) => {
+    setItems((current) =>
+      current.map((i) => (i.id === productId ? { ...i, instruction } : i))
+    );
+  };
+
   const clearCart = () => {
     setItems([]);
   };
@@ -74,6 +84,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         addToCart,
         removeFromCart,
         updateQuantity,
+        updateInstruction,
         clearCart,
         totalItems,
         totalPrice,
