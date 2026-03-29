@@ -41,19 +41,34 @@ const CATEGORIES = [
 const BANNERS = [banner1, banner2];
 
 function ComboImages({ images }: { images: string[] }) {
+  const n = images.length;
+  // Each image occupies equal share + a bit extra for overlap, positioned at even intervals
+  const slotPct = 100 / n;
+  const widthPct = n === 1 ? 100 : slotPct + slotPct * 0.45;
+
   return (
-    <div className="h-full bg-slate-50 flex items-center justify-center">
-      <div className="flex items-center justify-center">
-        {images.map((img, i) => (
-          <div
-            key={i}
-            className="w-16 h-16 rounded-full overflow-hidden border-2 border-white shadow-md flex-shrink-0"
-            style={{ marginLeft: i > 0 ? -18 : 0, zIndex: images.length - i, position: "relative" }}
-          >
-            <img src={img} alt="" className="w-full h-full object-cover" />
-          </div>
-        ))}
-      </div>
+    <div className="relative w-full h-full overflow-hidden">
+      {images.map((img, i) => (
+        <div
+          key={i}
+          className="absolute top-0 bottom-0"
+          style={{
+            left: `${i * slotPct}%`,
+            width: `${widthPct}%`,
+            zIndex: i,
+          }}
+        >
+          <img
+            src={img}
+            alt=""
+            className="w-full h-full object-cover"
+          />
+          {/* Soft shadow on right edge for depth */}
+          {i < n - 1 && (
+            <div className="absolute top-0 right-0 bottom-0 w-4 bg-gradient-to-r from-transparent to-black/10" />
+          )}
+        </div>
+      ))}
     </div>
   );
 }
@@ -214,7 +229,7 @@ export default function Home() {
                 <div className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                   {/* Full-bleed images — no bg, no circles */}
                   <Link href={`/combo/${combo.id}`}>
-                    <div className="h-32 overflow-hidden rounded-t-2xl cursor-pointer">
+                    <div className="h-36 overflow-hidden rounded-t-2xl cursor-pointer">
                       <ComboImages images={combo.images} />
                     </div>
                   </Link>
