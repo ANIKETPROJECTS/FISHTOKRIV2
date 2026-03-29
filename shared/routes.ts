@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertProductSchema, insertOrderRequestSchema, products, orderRequests, users } from './schema';
+import { insertProductSchema, insertOrderRequestSchema, type User, type Product, type OrderRequest } from './schema';
 
 export const errorSchemas = {
   validation: z.object({ message: z.string(), field: z.string().optional() }),
@@ -15,7 +15,7 @@ export const api = {
       path: '/api/login' as const,
       input: z.object({ username: z.string(), password: z.string() }),
       responses: {
-        200: z.custom<Omit<typeof users.$inferSelect, 'password'>>(),
+        200: z.custom<Omit<User, 'password'>>(),
         401: errorSchemas.unauthorized,
       },
     },
@@ -30,7 +30,7 @@ export const api = {
       method: 'GET' as const,
       path: '/api/me' as const,
       responses: {
-        200: z.custom<Omit<typeof users.$inferSelect, 'password'>>(),
+        200: z.custom<Omit<User, 'password'>>(),
         401: errorSchemas.unauthorized,
       },
     },
@@ -40,7 +40,7 @@ export const api = {
       method: 'GET' as const,
       path: '/api/products' as const,
       responses: {
-        200: z.array(z.custom<typeof products.$inferSelect>()),
+        200: z.array(z.custom<Product>()),
       },
     },
     create: {
@@ -48,7 +48,7 @@ export const api = {
       path: '/api/products' as const,
       input: insertProductSchema,
       responses: {
-        201: z.custom<typeof products.$inferSelect>(),
+        201: z.custom<Product>(),
         400: errorSchemas.validation,
         401: errorSchemas.unauthorized,
       },
@@ -58,7 +58,7 @@ export const api = {
       path: '/api/products/:id' as const,
       input: insertProductSchema.partial().extend({ isArchived: z.boolean().optional() }),
       responses: {
-        200: z.custom<typeof products.$inferSelect>(),
+        200: z.custom<Product>(),
         400: errorSchemas.validation,
         401: errorSchemas.unauthorized,
         404: errorSchemas.notFound,
@@ -88,7 +88,7 @@ export const api = {
       method: 'GET' as const,
       path: '/api/orders' as const,
       responses: {
-        200: z.array(z.custom<typeof orderRequests.$inferSelect>()),
+        200: z.array(z.custom<OrderRequest>()),
         401: errorSchemas.unauthorized,
       },
     },
@@ -97,7 +97,7 @@ export const api = {
       path: '/api/orders' as const,
       input: insertOrderRequestSchema,
       responses: {
-        201: z.custom<typeof orderRequests.$inferSelect>(),
+        201: z.custom<OrderRequest>(),
         400: errorSchemas.validation,
       },
     },
@@ -106,7 +106,7 @@ export const api = {
       path: '/api/orders/:id/status' as const,
       input: z.object({ status: z.string() }),
       responses: {
-        200: z.custom<typeof orderRequests.$inferSelect>(),
+        200: z.custom<OrderRequest>(),
         400: errorSchemas.validation,
         401: errorSchemas.unauthorized,
         404: errorSchemas.notFound,

@@ -2,13 +2,11 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
-import connectPgSimple from "connect-pg-simple";
+import MongoStore from "connect-mongo";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User as SelectUser } from "@shared/schema";
-
-const PostgresStore = connectPgSimple(session);
+import type { User as SelectUser } from "@shared/schema";
 
 declare global {
   namespace Express {
@@ -32,23 +30,25 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  const mongoUri = process.env.MONGODB_URI!;
+  const mongoDb = process.env.MONGODB_DB || "fishtokri";
+
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "fish_tokri_secret",
     resave: false,
     saveUninitialized: false,
-    store: new PostgresStore({
-      createTableIfMissing: true,
-      conObject: {
-        connectionString: process.env.DATABASE_URL,
-      },
+    store: MongoStore.create({
+      mongoUrl: mongoUri,
+      dbName: mongoDb,
+      collectionName: "sessions",
     }),
     cookie: {
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      secure: app.get("env") === "production",
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      secure: process.env.NODE_ENV === "production",
     },
   };
 
-  if (app.get("env") === "production") {
+  if (process.env.NODE_ENV === "production") {
     app.set("trust proxy", 1);
   }
 
@@ -71,7 +71,7 @@ export function setupAuth(app: Express) {
   );
 
   passport.serializeUser((user, done) => done(null, user.id));
-  passport.deserializeUser(async (id: number, done) => {
+  passport.deserializeUser(async (id: string, done) => {
     try {
       const user = await storage.getUser(id);
       done(null, user);
@@ -80,7 +80,6 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Ensure default admin exists
   (async () => {
     try {
       const admin = await storage.getUserByUsername("admin");

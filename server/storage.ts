@@ -1,110 +1,165 @@
-import { db } from "./db";
-import {
-  users,
-  products,
-  orderRequests,
-  type User,
-  type InsertUser,
-  type Product,
-  type InsertProduct,
-  type UpdateProductRequest,
-  type OrderRequest,
-  type InsertOrderRequest,
+import { UserModel, ProductModel, OrderModel } from "./db";
+import type {
+  User,
+  InsertUser,
+  Product,
+  InsertProduct,
+  UpdateProductRequest,
+  OrderRequest,
+  InsertOrderRequest,
 } from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
+
+function toUser(doc: any): User {
+  return {
+    id: doc._id.toString(),
+    username: doc.username,
+    password: doc.password,
+  };
+}
+
+function toProduct(doc: any): Product {
+  return {
+    id: doc._id.toString(),
+    name: doc.name,
+    category: doc.category,
+    status: doc.status,
+    limitedStockNote: doc.limitedStockNote ?? null,
+    price: doc.price ?? null,
+    unit: doc.unit ?? null,
+    imageUrl: doc.imageUrl ?? null,
+    isArchived: doc.isArchived ?? false,
+    updatedAt: doc.updatedAt,
+  };
+}
+
+function toOrder(doc: any): OrderRequest {
+  return {
+    id: doc._id.toString(),
+    customerName: doc.customerName,
+    phone: doc.phone,
+    deliveryArea: doc.deliveryArea,
+    address: doc.address,
+    items: doc.items,
+    status: doc.status,
+    notes: doc.notes ?? null,
+    createdAt: doc.createdAt,
+  };
+}
 
 export interface IStorage {
-  getUser(id: number): Promise<User | undefined>;
+  getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
 
   getProducts(): Promise<Product[]>;
-  getProduct(id: number): Promise<Product | undefined>;
+  getProduct(id: string): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
-  updateProduct(id: number, updates: UpdateProductRequest): Promise<Product | undefined>;
-  deleteProduct(id: number): Promise<void>;
+  updateProduct(id: string, updates: UpdateProductRequest): Promise<Product | undefined>;
+  deleteProduct(id: string): Promise<void>;
 
   getOrderRequests(): Promise<OrderRequest[]>;
   getOrdersByPhone(phone: string): Promise<OrderRequest[]>;
-  getOrderRequest(id: number): Promise<OrderRequest | undefined>;
+  getOrderRequest(id: string): Promise<OrderRequest | undefined>;
   createOrderRequest(order: InsertOrderRequest): Promise<OrderRequest>;
-  updateOrderRequestStatus(id: number, status: string): Promise<OrderRequest | undefined>;
+  updateOrderRequestStatus(id: string, status: string): Promise<OrderRequest | undefined>;
 }
 
-export class DatabaseStorage implements IStorage {
-  // Users
-  async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+export class MongoStorage implements IStorage {
+  async getUser(id: string): Promise<User | undefined> {
+    const doc = await UserModel.findById(id).lean();
+    return doc ? toUser(doc) : undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user;
+    const doc = await UserModel.findOne({ username }).lean();
+    return doc ? toUser(doc) : undefined;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
-    return user;
+  async createUser(user: InsertUser): Promise<User> {
+    const doc = await UserModel.create(user);
+    return toUser(doc);
   }
 
-  // Products
   async getProducts(): Promise<Product[]> {
-    return await db.select().from(products).where(eq(products.isArchived, false));
+    const docs = await ProductModel.find({ isArchived: false }).lean();
+    return docs.map(toProduct);
   }
 
-  async getProduct(id: number): Promise<Product | undefined> {
-    const [product] = await db.select().from(products).where(eq(products.id, id));
-    return product;
+  async getProduct(id: string): Promise<Product | undefined> {
+    try {
+      const doc = await ProductModel.findById(id).lean();
+      return doc ? toProduct(doc) : undefined;
+    } catch {
+      return undefined;
+    }
   }
 
   async createProduct(product: InsertProduct): Promise<Product> {
-    const [newProduct] = await db.insert(products).values(product).returning();
-    return newProduct;
+    const doc = await ProductModel.create({
+      ...product,
+      status: product.status ?? "available",
+      updatedAt: new Date(),
+    });
+    return toProduct(doc);
   }
 
-  async updateProduct(id: number, updates: UpdateProductRequest): Promise<Product | undefined> {
-    const [updated] = await db
-      .update(products)
-      .set(updates)
-      .where(eq(products.id, id))
-      .returning();
-    return updated;
+  async updateProduct(id: string, updates: UpdateProductRequest): Promise<Product | undefined> {
+    try {
+      const doc = await ProductModel.findByIdAndUpdate(
+        id,
+        { ...updates, updatedAt: new Date() },
+        { new: true }
+      ).lean();
+      return doc ? toProduct(doc) : undefined;
+    } catch {
+      return undefined;
+    }
   }
 
-  async deleteProduct(id: number): Promise<void> {
-    await db.update(products).set({ isArchived: true }).where(eq(products.id, id));
+  async deleteProduct(id: string): Promise<void> {
+    try {
+      await ProductModel.findByIdAndUpdate(id, { isArchived: true });
+    } catch {
+      // ignore
+    }
   }
 
-  // Orders
   async getOrderRequests(): Promise<OrderRequest[]> {
-    return await db.select().from(orderRequests).orderBy(desc(orderRequests.createdAt));
+    const docs = await OrderModel.find().sort({ createdAt: -1 }).lean();
+    return docs.map(toOrder);
   }
 
   async getOrdersByPhone(phone: string): Promise<OrderRequest[]> {
-    return await db.select().from(orderRequests)
-      .where(eq(orderRequests.phone, phone))
-      .orderBy(desc(orderRequests.createdAt));
+    const docs = await OrderModel.find({ phone }).sort({ createdAt: -1 }).lean();
+    return docs.map(toOrder);
   }
 
-  async getOrderRequest(id: number): Promise<OrderRequest | undefined> {
-    const [order] = await db.select().from(orderRequests).where(eq(orderRequests.id, id));
-    return order;
+  async getOrderRequest(id: string): Promise<OrderRequest | undefined> {
+    try {
+      const doc = await OrderModel.findById(id).lean();
+      return doc ? toOrder(doc) : undefined;
+    } catch {
+      return undefined;
+    }
   }
 
   async createOrderRequest(order: InsertOrderRequest): Promise<OrderRequest> {
-    const [newOrder] = await db.insert(orderRequests).values(order).returning();
-    return newOrder;
+    const doc = await OrderModel.create({
+      ...order,
+      status: "pending",
+      createdAt: new Date(),
+    });
+    return toOrder(doc);
   }
 
-  async updateOrderRequestStatus(id: number, status: string): Promise<OrderRequest | undefined> {
-    const [updated] = await db
-      .update(orderRequests)
-      .set({ status })
-      .where(eq(orderRequests.id, id))
-      .returning();
-    return updated;
+  async updateOrderRequestStatus(id: string, status: string): Promise<OrderRequest | undefined> {
+    try {
+      const doc = await OrderModel.findByIdAndUpdate(id, { status }, { new: true }).lean();
+      return doc ? toOrder(doc) : undefined;
+    } catch {
+      return undefined;
+    }
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = new MongoStorage();

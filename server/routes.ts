@@ -5,11 +5,14 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import passport from "passport";
 import { setupAuth } from "./auth";
+import { connectDB } from "./db";
+import { setImage, getImage, deleteImage } from "./imageStore";
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  await connectDB();
   setupAuth(app);
 
   const requireAuth = (req: any, res: any, next: any) => {
@@ -43,7 +46,7 @@ export async function registerRoutes(
     }
   });
 
-  // Products routes (public for list, protected for modifications)
+  // Products routes
   app.get(api.products.list.path, async (req, res) => {
     const products = await storage.getProducts();
     res.json(products);
@@ -65,7 +68,7 @@ export async function registerRoutes(
   app.patch(api.products.update.path, requireAuth, async (req, res) => {
     try {
       const input = api.products.update.input.parse(req.body);
-      const product = await storage.updateProduct(Number(req.params.id), input);
+      const product = await storage.updateProduct(req.params.id, input);
       if (!product) {
         return res.status(404).json({ message: "Product not found" });
       }
@@ -82,11 +85,9 @@ export async function registerRoutes(
     try {
       const { category, status } = api.products.bulkUpdateStatus.input.parse(req.body);
       const products = await storage.getProducts();
-      
       const promises = products
         .filter(p => p.category === category)
         .map(p => storage.updateProduct(p.id, { status }));
-        
       await Promise.all(promises);
       res.json({ success: true });
     } catch (err) {
@@ -98,11 +99,37 @@ export async function registerRoutes(
   });
 
   app.delete(api.products.delete.path, requireAuth, async (req, res) => {
-    await storage.deleteProduct(Number(req.params.id));
+    await storage.deleteProduct(req.params.id);
+    deleteImage(req.params.id);
     res.status(204).end();
   });
 
-  // Orders routes (public create, protected list/update)
+  // Image upload (in-memory)
+  app.post("/api/products/:id/image", requireAuth, async (req: any, res) => {
+    const chunks: Buffer[] = [];
+    req.on("data", (chunk: Buffer) => chunks.push(chunk));
+    req.on("end", async () => {
+      const buffer = Buffer.concat(chunks);
+      const mimeType = req.headers["content-type"] || "image/jpeg";
+      const id = req.params.id;
+      setImage(id, buffer, mimeType);
+      const imageUrl = `/api/products/${id}/image`;
+      await storage.updateProduct(id, { imageUrl });
+      res.json({ imageUrl });
+    });
+    req.on("error", () => res.status(500).json({ message: "Upload failed" }));
+  });
+
+  // Image serve (from in-memory)
+  app.get("/api/products/:id/image", (req, res) => {
+    const img = getImage(req.params.id);
+    if (!img) return res.status(404).end();
+    res.setHeader("Content-Type", img.mimeType);
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.send(img.data);
+  });
+
+  // Orders routes
   app.post(api.orders.create.path, async (req, res) => {
     try {
       const input = api.orders.create.input.parse(req.body);
@@ -131,7 +158,7 @@ export async function registerRoutes(
   app.patch(api.orders.updateStatus.path, requireAuth, async (req, res) => {
     try {
       const input = api.orders.updateStatus.input.parse(req.body);
-      const order = await storage.updateOrderRequestStatus(Number(req.params.id), input.status);
+      const order = await storage.updateOrderRequestStatus(req.params.id, input.status);
       if (!order) {
         return res.status(404).json({ message: "Order not found" });
       }
@@ -144,7 +171,6 @@ export async function registerRoutes(
     }
   });
 
-  // Seed data
   await seedDatabase();
 
   return httpServer;
@@ -154,7 +180,6 @@ async function seedDatabase() {
   const existingProducts = await storage.getProducts();
   if (existingProducts.length === 0) {
     const defaultProducts = [
-      // FISH
       { name: "Silver Pomfret", category: "Fish", status: "available", price: 1200, unit: "per kg" },
       { name: "Black Pomfret", category: "Fish", status: "available", price: 1100, unit: "per kg" },
       { name: "Khapri Pomfret", category: "Fish", status: "available", price: 1000, unit: "per kg" },
@@ -173,8 +198,6 @@ async function seedDatabase() {
       { name: "Vaam", category: "Fish", status: "available", price: 700, unit: "per kg" },
       { name: "Indian Basa", category: "Fish", status: "available", price: 400, unit: "per kg" },
       { name: "Rohu", category: "Fish", status: "available", price: 300, unit: "per kg" },
-      
-      // PRAWNS
       { name: "White Prawn", category: "Prawns", status: "available", price: 700, unit: "per kg" },
       { name: "Red Prawn", category: "Prawns", status: "available", price: 750, unit: "per kg" },
       { name: "Tiger Prawn", category: "Prawns", status: "available", price: 1200, unit: "per kg" },
@@ -183,8 +206,6 @@ async function seedDatabase() {
       { name: "Lobsters", category: "Prawns", status: "available", price: 2500, unit: "per kg" },
       { name: "Kardi", category: "Prawns", status: "available", price: 400, unit: "per kg" },
       { name: "Jumbo Prawn", category: "Prawns", status: "available", price: 1500, unit: "per kg" },
-
-      // CHICKEN
       { name: "Chicken Curry Cut", category: "Chicken", status: "available", price: 250, unit: "per kg" },
       { name: "Chicken Breast", category: "Chicken", status: "available", price: 350, unit: "per kg" },
       { name: "Chicken Boneless Cubes", category: "Chicken", status: "available", price: 400, unit: "per kg" },
@@ -193,8 +214,6 @@ async function seedDatabase() {
       { name: "Chicken Lollipop", category: "Chicken", status: "available", price: 300, unit: "per 10pcs" },
       { name: "Chicken Kheema", category: "Chicken", status: "available", price: 450, unit: "per kg" },
       { name: "Chicken Liver", category: "Chicken", status: "available", price: 150, unit: "per kg" },
-
-      // MUTTON
       { name: "Goat Curry Cut", category: "Mutton", status: "available", price: 850, unit: "per kg" },
       { name: "Goat Shoulder Cut", category: "Mutton", status: "available", price: 900, unit: "per kg" },
       { name: "Goat Boneless", category: "Mutton", status: "available", price: 1100, unit: "per kg" },
@@ -203,8 +222,6 @@ async function seedDatabase() {
       { name: "Goat Paya", category: "Mutton", status: "available", price: 400, unit: "per 4pcs" },
       { name: "Goat Brain", category: "Mutton", status: "available", price: 250, unit: "per pc" },
       { name: "Goat Biryani Cut", category: "Mutton", status: "available", price: 850, unit: "per kg" },
-
-      // MASALAS
       { name: "Fish Curry Masala", category: "Masalas", status: "available", price: 50, unit: "per pc" },
       { name: "Fish Fry Masala", category: "Masalas", status: "available", price: 50, unit: "per pc" },
       { name: "Malvani Masala", category: "Masalas", status: "available", price: 100, unit: "per 100g" },
@@ -212,10 +229,9 @@ async function seedDatabase() {
       { name: "Special Mutton Masala", category: "Masalas", status: "available", price: 60, unit: "per pc" },
       { name: "Koliwada Masala", category: "Masalas", status: "available", price: 70, unit: "per pc" },
     ];
-    
     for (const product of defaultProducts) {
-      await storage.createProduct(product as any);
+      await storage.createProduct(product);
     }
-    console.log("Seeded database with all FishTokri products.");
+    console.log("Seeded MongoDB with all FishTokri products.");
   }
 }

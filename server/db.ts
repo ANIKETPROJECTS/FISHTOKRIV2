@@ -1,14 +1,49 @@
-import { drizzle } from "drizzle-orm/node-postgres";
-import pg from "pg";
-import * as schema from "@shared/schema";
+import mongoose from "mongoose";
 
-const { Pool } = pg;
+const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_DB = process.env.MONGODB_DB || "fishtokri";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
+if (!MONGODB_URI) {
+  throw new Error("MONGODB_URI must be set.");
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle(pool, { schema });
+let isConnected = false;
+
+export async function connectDB() {
+  if (isConnected) return;
+  await mongoose.connect(MONGODB_URI!, { dbName: MONGODB_DB });
+  isConnected = true;
+  console.log("Connected to MongoDB");
+}
+
+const userSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+});
+
+const productSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  category: { type: String, required: true },
+  status: { type: String, default: "available" },
+  limitedStockNote: { type: String, default: null },
+  price: { type: Number, default: null },
+  unit: { type: String, default: null },
+  imageUrl: { type: String, default: null },
+  isArchived: { type: Boolean, default: false },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+const orderSchema = new mongoose.Schema({
+  customerName: { type: String, required: true },
+  phone: { type: String, required: true },
+  deliveryArea: { type: String, required: true },
+  address: { type: String, required: true },
+  items: { type: mongoose.Schema.Types.Mixed, required: true },
+  status: { type: String, default: "pending" },
+  notes: { type: String, default: null },
+  createdAt: { type: Date, default: Date.now },
+});
+
+export const UserModel = mongoose.models.User || mongoose.model("User", userSchema);
+export const ProductModel = mongoose.models.Product || mongoose.model("Product", productSchema);
+export const OrderModel = mongoose.models.Order || mongoose.model("Order", orderSchema);
