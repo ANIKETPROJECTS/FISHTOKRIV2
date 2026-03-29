@@ -1,24 +1,28 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link } from "wouter";
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X } from "lucide-react";
+import { CategoryMenuDropdown } from "@/components/storefront/CategoryMenu";
 
 import logoImg from "@assets/280573676_130730389426381_2998509351925873585_n-removebg-previ_1774706495578.png";
 import cartImg from "@assets/shopping-bag_1774706595493.png";
 import userImg from "@assets/user_(1)_1774707188827.png";
 import searchImg from "@assets/search-interface-symbol_1774706690468.png";
 import locationImg from "@assets/placeholder_(1)_1774706943633.png";
+import menuIconImg from "@assets/menu_1774777650454.png";
 
 export function Header({ onSearch }: { onSearch?: (query: string) => void }) {
   const { totalItems, setIsCartOpen } = useCart();
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
 
   return (
-    <header className="sticky top-0 z-50 glass">
+    <header ref={headerRef} className="sticky top-0 z-50 glass">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2">
-        {/* Left: Logo — larger text/icon, same header height */}
+        {/* Left: Logo */}
         <div className="flex items-center shrink-0">
           <Link href="/" className="flex items-center gap-1.5 group">
             <img src={logoImg} alt="FishTokri Logo" className="w-11 h-11 sm:w-14 sm:h-14 object-contain" />
@@ -51,6 +55,7 @@ export function Header({ onSearch }: { onSearch?: (query: string) => void }) {
               className="sm:hidden text-foreground hover:bg-accent/10 rounded-full w-9 h-9"
               onClick={() => setMobileSearchOpen(v => !v)}
               aria-label="Search"
+              data-testid="button-mobile-search"
             >
               {mobileSearchOpen
                 ? <X className="w-5 h-5" />
@@ -59,8 +64,20 @@ export function Header({ onSearch }: { onSearch?: (query: string) => void }) {
             </Button>
           )}
 
+          {/* Category menu icon — between search and profile */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`text-foreground hover:bg-accent/10 rounded-full w-9 h-9 transition-colors ${categoryMenuOpen ? "bg-accent/10" : ""}`}
+            onClick={() => setCategoryMenuOpen(v => !v)}
+            aria-label="Categories"
+            data-testid="button-categories"
+          >
+            <img src={menuIconImg} alt="Categories" className="w-5 h-5 sm:w-6 sm:h-6 object-contain" />
+          </Button>
+
           <Link href="/profile">
-            <Button variant="ghost" size="icon" className="text-foreground hover:bg-accent/10 rounded-full w-9 h-9">
+            <Button variant="ghost" size="icon" className="text-foreground hover:bg-accent/10 rounded-full w-9 h-9" data-testid="button-profile">
               <img src={userImg} alt="Profile" className="w-5 h-5 sm:w-6 sm:h-6 object-contain" />
             </Button>
           </Link>
@@ -70,6 +87,7 @@ export function Header({ onSearch }: { onSearch?: (query: string) => void }) {
             variant="ghost"
             size="icon"
             className="relative text-foreground hover:bg-accent/10 rounded-full w-9 h-9"
+            data-testid="button-cart"
           >
             <img src={cartImg} alt="Cart" className="w-5 h-5 sm:w-6 sm:h-6 object-contain" />
             {totalItems > 0 && (
@@ -79,13 +97,19 @@ export function Header({ onSearch }: { onSearch?: (query: string) => void }) {
             )}
           </Button>
 
-          {/* Location — all screen sizes */}
+          {/* Location */}
           <div className="flex items-center gap-1 pl-1.5 border-l border-border/50 ml-0.5">
             <img src={locationImg} alt="Location" className="w-3.5 h-3.5 object-contain" />
             <span className="text-xs sm:text-sm font-medium text-foreground">Mumbai</span>
           </div>
         </div>
       </div>
+
+      {/* Category mega-menu dropdown */}
+      <CategoryMenuDropdown
+        open={categoryMenuOpen}
+        onClose={() => setCategoryMenuOpen(false)}
+      />
 
       {/* Mobile expandable search */}
       {onSearch && mobileSearchOpen && (
