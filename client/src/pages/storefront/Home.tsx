@@ -41,36 +41,18 @@ const CATEGORIES = [
 const BANNERS = [banner1, banner2];
 
 function ComboImages({ images }: { images: string[] }) {
-  if (images.length === 1) {
-    return <img src={images[0]} alt="" className="w-full h-full object-cover" />;
-  }
-  if (images.length === 2) {
-    return (
-      <div className="flex w-full h-full">
-        <div className="w-1/2 h-full overflow-hidden">
-          <img src={images[0]} alt="" className="w-full h-full object-cover" />
-        </div>
-        <div className="w-px bg-white flex-shrink-0" />
-        <div className="w-1/2 h-full overflow-hidden">
-          <img src={images[1]} alt="" className="w-full h-full object-cover" />
-        </div>
-      </div>
-    );
-  }
   return (
-    <div className="flex w-full h-full">
-      <div className="w-1/2 h-full overflow-hidden">
-        <img src={images[0]} alt="" className="w-full h-full object-cover" />
-      </div>
-      <div className="w-px bg-white flex-shrink-0" />
-      <div className="w-1/2 h-full flex flex-col overflow-hidden">
-        <div className="flex-1 overflow-hidden">
-          <img src={images[1]} alt="" className="w-full h-full object-cover" />
-        </div>
-        <div className="h-px bg-white flex-shrink-0" />
-        <div className="flex-1 overflow-hidden">
-          <img src={images[2]} alt="" className="w-full h-full object-cover" />
-        </div>
+    <div className="h-full bg-slate-50 flex items-center justify-center">
+      <div className="flex items-center justify-center">
+        {images.map((img, i) => (
+          <div
+            key={i}
+            className="w-16 h-16 rounded-full overflow-hidden border-2 border-white shadow-md flex-shrink-0"
+            style={{ marginLeft: i > 0 ? -18 : 0, zIndex: images.length - i, position: "relative" }}
+          >
+            <img src={img} alt="" className="w-full h-full object-cover" />
+          </div>
+        ))}
       </div>
     </div>
   );

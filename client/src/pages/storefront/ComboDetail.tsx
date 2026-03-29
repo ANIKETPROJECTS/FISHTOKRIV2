@@ -1,10 +1,9 @@
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { useCart } from "@/context/CartContext";
 import { Header } from "@/components/storefront/Header";
 import { CartDrawer } from "@/components/storefront/CartDrawer";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Tag, ShoppingBag, Check } from "lucide-react";
-import { useLocation } from "wouter";
+import { ChevronLeft, Tag, ShoppingBag, Check, Flame, Utensils } from "lucide-react";
 import { useState } from "react";
 import fishImg from "@assets/Gemini_Generated_Image_w6wqkkw6wqkkw6wq_(1)_1772713077919.png";
 import prawnsImg from "@assets/Gemini_Generated_Image_5xy0sd5xy0sd5xy0_1772713090650.png";
@@ -27,6 +26,14 @@ export const COMBOS_DATA = [
     images: [fishImg, prawnsImg],
     includes: ["Silver Pomfret 500g – cleaned & cut", "White Prawns 500g – deveined"],
     tags: ["Bestseller", "Fresh"],
+    nutrition: [
+      { label: "Calories", value: "180 kcal", icon: "🔥" },
+      { label: "Protein", value: "28g", icon: "💪" },
+      { label: "Fat", value: "6g", icon: "🫙" },
+      { label: "Omega-3", value: "High", icon: "🐟" },
+      { label: "Sodium", value: "75mg", icon: "🧂" },
+      { label: "Iron", value: "2mg", icon: "⚡" },
+    ],
   },
   {
     id: "c2",
@@ -42,6 +49,14 @@ export const COMBOS_DATA = [
     images: [chickenImg, muttonImg],
     includes: ["Chicken Curry Cut 1kg – cleaned", "Goat Curry Cut 500g – cleaned"],
     tags: ["Family Size", "Value"],
+    nutrition: [
+      { label: "Calories", value: "220 kcal", icon: "🔥" },
+      { label: "Protein", value: "32g", icon: "💪" },
+      { label: "Fat", value: "10g", icon: "🫙" },
+      { label: "Calcium", value: "18mg", icon: "🦴" },
+      { label: "Sodium", value: "95mg", icon: "🧂" },
+      { label: "Iron", value: "3mg", icon: "⚡" },
+    ],
   },
   {
     id: "c3",
@@ -57,6 +72,14 @@ export const COMBOS_DATA = [
     images: [fishImg, prawnsImg, masalaImg],
     includes: ["Surmai 500g – steaked", "Tiger Prawns 250g – deveined", "Koliwada Masala 1 pack"],
     tags: ["Premium", "Weekend Pick"],
+    nutrition: [
+      { label: "Calories", value: "195 kcal", icon: "🔥" },
+      { label: "Protein", value: "30g", icon: "💪" },
+      { label: "Fat", value: "7g", icon: "🫙" },
+      { label: "Omega-3", value: "Very High", icon: "🐟" },
+      { label: "Sodium", value: "80mg", icon: "🧂" },
+      { label: "Iron", value: "2.5mg", icon: "⚡" },
+    ],
   },
   {
     id: "c4",
@@ -72,6 +95,14 @@ export const COMBOS_DATA = [
     images: [chickenImg, masalaImg],
     includes: ["Chicken Boneless Cubes 500g", "Fish Fry Masala 1 pack"],
     tags: ["Quick", "Weekday"],
+    nutrition: [
+      { label: "Calories", value: "165 kcal", icon: "🔥" },
+      { label: "Protein", value: "27g", icon: "💪" },
+      { label: "Fat", value: "4g", icon: "🫙" },
+      { label: "Carbs", value: "3g", icon: "🌾" },
+      { label: "Sodium", value: "65mg", icon: "🧂" },
+      { label: "Iron", value: "1.5mg", icon: "⚡" },
+    ],
   },
   {
     id: "c5",
@@ -87,6 +118,14 @@ export const COMBOS_DATA = [
     images: [prawnsImg, masalaImg],
     includes: ["Tiger Prawns 500g – cleaned & deveined", "Koliwada Masala 1 pack"],
     tags: ["Popular", "Coastal Style"],
+    nutrition: [
+      { label: "Calories", value: "150 kcal", icon: "🔥" },
+      { label: "Protein", value: "26g", icon: "💪" },
+      { label: "Fat", value: "3g", icon: "🫙" },
+      { label: "Omega-3", value: "High", icon: "🐟" },
+      { label: "Sodium", value: "90mg", icon: "🧂" },
+      { label: "Iron", value: "2mg", icon: "⚡" },
+    ],
   },
 ];
 
@@ -97,7 +136,14 @@ export default function ComboDetail() {
   const [added, setAdded] = useState(false);
 
   const combo = COMBOS_DATA.find(c => c.id === id);
-  if (!combo) return <div className="p-8 text-center text-muted-foreground">Combo not found.</div>;
+  if (!combo) return (
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+      <Header />
+      <p className="text-muted-foreground text-lg">Combo not found.</p>
+      <Button onClick={() => navigate("/")}>Go Home</Button>
+      <CartDrawer />
+    </div>
+  );
 
   const handleAddToCart = () => {
     addToCart({
@@ -118,98 +164,141 @@ export default function ComboDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-white font-sans">
-      <div className="sticky top-0 z-50 bg-white border-b border-border/30 px-4 py-4 flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1 as any)} className="rounded-full border border-border/40">
-          <ChevronLeft className="w-5 h-5" />
-        </Button>
-        <h1 className="text-lg font-bold text-foreground flex-1 truncate">{combo.name}</h1>
-        <span className="text-xs font-bold text-white bg-accent px-3 py-1 rounded-full">{combo.discount}% OFF</span>
-      </div>
+    <div className="min-h-screen bg-background font-sans">
+      <Header />
 
-      {/* Stacked Images */}
-      <div className="bg-slate-50 py-10 flex flex-col items-center">
-        <div className="flex items-center justify-center">
-          {combo.images.map((img, i) => (
-            <div
-              key={i}
-              className="w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden border-4 border-white shadow-lg"
-              style={{ marginLeft: i > 0 ? -32 : 0, zIndex: combo.images.length - i }}
-            >
-              <img src={img} alt="" className="w-full h-full object-cover" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+        {/* Back */}
+        <button
+          onClick={() => navigate("/" as any)}
+          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
+        >
+          <ChevronLeft className="w-4 h-4" /> Back to store
+        </button>
+
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-14">
+          {/* LEFT – Stacked images */}
+          <div className="relative">
+            <div className="aspect-square rounded-3xl overflow-hidden border border-border/20 shadow-lg bg-muted/10 flex items-center justify-center">
+              <div className="flex items-center justify-center">
+                {combo.images.map((img, i) => (
+                  <div
+                    key={i}
+                    className="w-36 h-36 sm:w-44 sm:h-44 rounded-full overflow-hidden border-4 border-white shadow-lg flex-shrink-0"
+                    style={{ marginLeft: i > 0 ? -44 : 0, zIndex: combo.images.length - i }}
+                  >
+                    <img src={img} alt="" className="w-full h-full object-cover" />
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
-        <div className="flex gap-2 mt-6 flex-wrap justify-center px-4">
-          {combo.tags.map(tag => (
-            <span key={tag} className="text-xs font-semibold bg-primary/10 text-primary px-3 py-1 rounded-full">{tag}</span>
-          ))}
-        </div>
-      </div>
-
-      <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
-        {/* Title and price */}
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">{combo.name}</h2>
-          <p className="text-sm text-muted-foreground mt-1">{combo.description}</p>
-          <div className="flex items-center gap-3 mt-3">
-            <span className="text-3xl font-bold text-primary">₹{combo.discountedPrice}</span>
-            <span className="text-lg text-muted-foreground line-through">₹{combo.originalPrice}</span>
-            <span className="text-sm font-bold text-emerald-600">Save ₹{combo.originalPrice - combo.discountedPrice}</span>
+            <div className="absolute top-4 left-4 flex gap-2 flex-wrap">
+              {combo.tags.map(tag => (
+                <span key={tag} className="text-xs font-bold bg-primary text-white px-3 py-1 rounded-full shadow-sm">{tag}</span>
+              ))}
+            </div>
           </div>
-          <div className="flex gap-4 mt-3 text-xs text-muted-foreground">
-            <span>🍽 Serves {combo.serves}</span>
-            <span>⚖️ {combo.weight}</span>
-          </div>
-        </div>
 
-        {/* About */}
-        <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-          <h3 className="text-sm font-bold text-foreground mb-2">About This Combo</h3>
-          <p className="text-sm text-muted-foreground leading-relaxed">{combo.fullDescription}</p>
-        </div>
+          {/* RIGHT – Details */}
+          <div className="flex flex-col gap-5">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-widest text-primary/70 mb-1 block">Combo Pack</span>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">{combo.name}</h1>
+            </div>
 
-        {/* What's Included */}
-        <div>
-          <h3 className="text-sm font-bold text-foreground mb-3">What's Included</h3>
-          <div className="space-y-2">
-            {combo.includes.map((item, i) => (
-              <div key={i} className="flex items-center gap-3 bg-emerald-50 rounded-xl p-3 border border-emerald-100">
-                <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
-                  <Check className="w-3.5 h-3.5 text-white" />
+            <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">{combo.fullDescription}</p>
+
+            {/* Stats */}
+            <div className="flex items-center gap-0 divide-x divide-border border border-border/40 rounded-2xl overflow-hidden bg-muted/20">
+              {[
+                { label: "Serves", value: combo.serves, icon: "🍽️" },
+                { label: "Weight", value: combo.weight, icon: "⚖️" },
+                { label: "Items", value: `${combo.includes.length} items`, icon: "📦" },
+              ].map(({ label, value, icon }) => (
+                <div key={label} className="flex-1 flex flex-col items-center py-4 px-2">
+                  <span className="text-xl mb-1">{icon}</span>
+                  <span className="text-xs text-muted-foreground">{label}</span>
+                  <span className="text-sm font-semibold text-foreground mt-0.5 text-center">{value}</span>
                 </div>
-                <span className="text-sm font-medium text-foreground">{item}</span>
+              ))}
+            </div>
+
+            {/* What's included */}
+            <div>
+              <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+                <Utensils className="w-4 h-4 text-accent" /> What's Included
+              </h3>
+              <div className="space-y-2">
+                {combo.includes.map((item, i) => (
+                  <div key={i} className="flex items-center gap-3 bg-emerald-50 rounded-xl p-3 border border-emerald-100">
+                    <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                      <Check className="w-3.5 h-3.5 text-white" />
+                    </div>
+                    <span className="text-sm font-medium text-foreground">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Price */}
+            <div className="bg-muted/30 border border-border/30 rounded-2xl px-5 py-4">
+              <div className="flex items-end gap-3 mb-1">
+                <span className="text-3xl font-bold text-foreground">₹{combo.discountedPrice}</span>
+                <span className="text-base text-muted-foreground line-through mb-0.5">₹{combo.originalPrice}</span>
+                <span className="text-sm font-semibold text-green-600 mb-0.5">{combo.discount}% off</span>
+              </div>
+              <p className="text-xs text-muted-foreground">Inclusive of all taxes. Free delivery on orders above ₹499.</p>
+            </div>
+
+            {/* Savings */}
+            <div className="flex items-center gap-3 bg-accent/5 border border-accent/20 rounded-2xl p-4">
+              <Tag className="w-5 h-5 text-accent flex-shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-foreground">You save ₹{combo.originalPrice - combo.discountedPrice} ({combo.discount}% off)</p>
+                <p className="text-xs text-muted-foreground">vs buying each item separately</p>
+              </div>
+            </div>
+
+            {/* Add to Cart */}
+            <Button
+              onClick={handleAddToCart}
+              className={`h-12 rounded-full font-bold text-base flex items-center justify-center gap-2 transition-all ${
+                added ? "bg-emerald-500 text-white" : "bg-primary text-white shadow-lg shadow-primary/20"
+              }`}
+              data-testid="button-add-combo-to-cart"
+            >
+              {added ? (
+                <><Check className="w-5 h-5" /> Added to Cart!</>
+              ) : (
+                <><ShoppingBag className="w-5 h-5" /> Add to Cart — ₹{combo.discountedPrice}</>
+              )}
+            </Button>
+          </div>
+        </div>
+
+        {/* Nutritional Information */}
+        <section className="mb-14">
+          <div className="flex items-center gap-2 mb-5">
+            <Flame className="w-5 h-5 text-accent" />
+            <h2 className="text-xl font-bold text-foreground">Nutritional Information</h2>
+            <span className="text-xs text-muted-foreground ml-1">(per 100 g)</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            {combo.nutrition.map(({ label, value, icon }) => (
+              <div
+                key={label}
+                className="bg-card border border-border/30 rounded-2xl p-4 flex flex-col items-center gap-2 text-center hover:shadow-sm transition-shadow"
+              >
+                <span className="text-3xl">{icon}</span>
+                <span className="text-xs text-muted-foreground">{label}</span>
+                <span className="text-sm font-bold text-foreground">{value}</span>
               </div>
             ))}
           </div>
-        </div>
-
-        {/* Savings note */}
-        <div className="flex items-center gap-3 bg-accent/5 border border-accent/20 rounded-2xl p-4">
-          <Tag className="w-5 h-5 text-accent flex-shrink-0" />
-          <div>
-            <p className="text-sm font-semibold text-foreground">You save ₹{combo.originalPrice - combo.discountedPrice} ({combo.discount}% off)</p>
-            <p className="text-xs text-muted-foreground">vs buying each item separately</p>
-          </div>
-        </div>
+        </section>
       </div>
 
-      {/* Sticky Add to Cart */}
-      <div className="sticky bottom-0 bg-white border-t border-border/30 px-4 py-4 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
-        <Button
-          onClick={handleAddToCart}
-          className={`w-full h-14 rounded-2xl font-bold text-base flex items-center justify-center gap-2 transition-all ${
-            added ? "bg-emerald-500 text-white" : "bg-primary text-white shadow-lg shadow-primary/20"
-          }`}
-          data-testid="button-add-combo-to-cart"
-        >
-          {added ? (
-            <><Check className="w-5 h-5" /> Added to Order!</>
-          ) : (
-            <><ShoppingBag className="w-5 h-5" /> Add Combo — ₹{combo.discountedPrice}</>
-          )}
-        </Button>
-      </div>
       <CartDrawer />
     </div>
   );

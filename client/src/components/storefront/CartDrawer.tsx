@@ -24,10 +24,13 @@ export interface SavedAddress {
   id: string;
   name: string;
   phone: string;
-  building: string;
-  street: string;
-  area: string;
-  type: "house" | "office" | "other";
+  pincode: string;
+  state: string;
+  address: string;
+  locality: string;
+  city: string;
+  landmark: string;
+  type: "home" | "office" | "other";
   label: string;
   instructions: string;
 }
@@ -37,10 +40,13 @@ const DUMMY_ADDRESSES: SavedAddress[] = [
     id: "dummy-1",
     name: "Rahul Sharma",
     phone: "9876543210",
-    building: "Seaview Apartments, Wing B, Flat 402",
-    street: "Lokhandwala Complex Road",
-    area: "Andheri West, Mumbai 400053",
-    type: "house",
+    pincode: "400053",
+    state: "Maharashtra",
+    address: "Seaview Apartments, Wing B, Flat 402",
+    locality: "Lokhandwala Complex",
+    city: "Mumbai",
+    landmark: "Near D-Mart",
+    type: "home",
     label: "Home",
     instructions: "Call before delivery",
   },
@@ -48,9 +54,12 @@ const DUMMY_ADDRESSES: SavedAddress[] = [
     id: "dummy-2",
     name: "Rahul Sharma",
     phone: "9876543210",
-    building: "Tech Park, Tower 3, Floor 5",
-    street: "Marve Road",
-    area: "Malad West, Mumbai 400064",
+    pincode: "400064",
+    state: "Maharashtra",
+    address: "Tech Park, Tower 3, Floor 5",
+    locality: "Marve Road",
+    city: "Mumbai",
+    landmark: "Opposite Metro Station",
     type: "office",
     label: "Office",
     instructions: "Leave at reception",
@@ -58,7 +67,7 @@ const DUMMY_ADDRESSES: SavedAddress[] = [
 ];
 
 const addressTypeColors: Record<string, string> = {
-  house: "bg-blue-100 text-blue-700",
+  home: "bg-blue-100 text-blue-700",
   office: "bg-purple-100 text-purple-700",
   other: "bg-amber-100 text-amber-700",
 };
@@ -102,10 +111,10 @@ export function CartDrawer() {
   const placeOrder = () => {
     const selected = savedAddresses.find(a => a.id === selectedAddressId);
     if (!selected) return;
-    const fullAddress = [selected.building, selected.street, selected.area].filter(Boolean).join(", ");
+    const fullAddress = [selected.address, selected.locality, selected.city, selected.state, selected.pincode].filter(Boolean).join(", ");
     const orderItems = items.map(i => ({ productId: i.id, quantity: i.quantity, name: i.name, price: i.price }));
     createOrder(
-      { customerName: selected.name, phone: selected.phone, deliveryArea: selected.area, address: fullAddress, notes: selected.instructions, items: orderItems },
+      { customerName: selected.name, phone: selected.phone, deliveryArea: selected.city, address: fullAddress, notes: selected.instructions, items: orderItems },
       { onSuccess: () => { setIsSuccess(true); clearCart(); } }
     );
   };
@@ -162,15 +171,12 @@ export function CartDrawer() {
             ) : (
               <div className="flex-1 flex flex-col overflow-hidden">
                 <div className="flex-1 overflow-y-auto scrollbar-hide">
-
-                  {/* Savings Banner */}
                   {savedTotal > 0 && (
                     <div className="mx-4 mt-4 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5 text-center">
                       <p className="text-emerald-700 text-sm font-semibold">🎉 Congratulations! You've saved ₹{savedTotal}</p>
                     </div>
                   )}
 
-                  {/* Cart Items */}
                   <div className="px-4 pt-4 space-y-3">
                     {items.map(item => (
                       <div key={item.id} className="bg-white rounded-2xl border border-border/40 shadow-sm overflow-hidden" data-testid={`cart-item-${item.id}`}>
@@ -201,8 +207,6 @@ export function CartDrawer() {
                             </button>
                           </div>
                         </div>
-
-                        {/* Cooking Instructions */}
                         {expandedInstructions[item.id] ? (
                           <div className="px-3 pb-3">
                             <Input
@@ -230,7 +234,6 @@ export function CartDrawer() {
                     ))}
                   </div>
 
-                  {/* Bill Details */}
                   <div className="mx-4 mt-4 border border-dashed border-border/60 rounded-2xl p-4 space-y-2.5">
                     <h3 className="font-semibold text-foreground text-sm mb-3">Bill Details</h3>
                     {items.map(item => (
@@ -255,7 +258,6 @@ export function CartDrawer() {
                     </div>
                   </div>
 
-                  {/* Delivery Address */}
                   <div className="px-4 mt-5 mb-2">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="font-semibold text-foreground text-sm flex items-center gap-1.5">
@@ -267,10 +269,7 @@ export function CartDrawer() {
                     </div>
 
                     {savedAddresses.length === 0 ? (
-                      <button
-                        onClick={goAddAddress}
-                        className="w-full border-2 border-dashed border-border/50 rounded-2xl p-4 text-center text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors"
-                      >
+                      <button onClick={goAddAddress} className="w-full border-2 border-dashed border-border/50 rounded-2xl p-4 text-center text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors">
                         <MapPin className="w-6 h-6 mx-auto mb-1 opacity-40" />
                         <p className="text-sm font-medium">+ Add delivery address</p>
                       </button>
@@ -281,11 +280,7 @@ export function CartDrawer() {
                             key={addr.id}
                             type="button"
                             onClick={() => setSelectedAddressId(addr.id)}
-                            className={`w-full text-left p-3.5 rounded-2xl border-2 transition-all ${
-                              selectedAddressId === addr.id
-                                ? "border-primary bg-primary/5"
-                                : "border-border/40 bg-white hover:border-primary/30"
-                            }`}
+                            className={`w-full text-left p-3.5 rounded-2xl border-2 transition-all ${selectedAddressId === addr.id ? "border-primary bg-primary/5" : "border-border/40 bg-white hover:border-primary/30"}`}
                             data-testid={`address-option-${addr.id}`}
                           >
                             <div className="flex items-start gap-2.5">
@@ -301,7 +296,7 @@ export function CartDrawer() {
                                 </div>
                                 <p className="text-xs text-muted-foreground">{addr.phone}</p>
                                 <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                                  {[addr.building, addr.street, addr.area].filter(Boolean).join(", ")}
+                                  {[addr.address, addr.locality, addr.city, addr.state, addr.pincode].filter(Boolean).join(", ")}
                                 </p>
                               </div>
                             </div>
@@ -311,7 +306,6 @@ export function CartDrawer() {
                     )}
                   </div>
 
-                  {/* Payment Method */}
                   <div className="px-4 mt-5 mb-4 space-y-3">
                     <h3 className="font-semibold text-foreground text-sm">Payment Method</h3>
                     <div className="space-y-2">
@@ -323,9 +317,7 @@ export function CartDrawer() {
                           key={opt.value}
                           type="button"
                           onClick={() => setPaymentMethod(opt.value as "cod" | "online")}
-                          className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all text-left ${
-                            paymentMethod === opt.value ? "border-primary bg-primary/5" : "border-border/40 bg-white hover:border-primary/30"
-                          }`}
+                          className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all text-left ${paymentMethod === opt.value ? "border-primary bg-primary/5" : "border-border/40 bg-white hover:border-primary/30"}`}
                           data-testid={`payment-${opt.value}`}
                         >
                           <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${paymentMethod === opt.value ? "border-primary" : "border-slate-300"}`}>
@@ -339,7 +331,6 @@ export function CartDrawer() {
                   </div>
                 </div>
 
-                {/* Sticky Footer */}
                 <div className="px-4 py-4 border-t border-border/30 bg-white sticky bottom-0 z-10">
                   <div className="flex items-center justify-between">
                     <div>

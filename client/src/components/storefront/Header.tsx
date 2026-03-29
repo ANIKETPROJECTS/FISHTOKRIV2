@@ -17,12 +17,12 @@ export function Header({ onSearch }: { onSearch?: (query: string) => void }) {
 
   return (
     <header className="sticky top-0 z-50 glass">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-4">
-        {/* Left: Logo */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2">
+        {/* Left: Logo — larger text/icon, same header height */}
         <div className="flex items-center shrink-0">
-          <Link href="/" className="flex items-center gap-1.5 sm:gap-2 group">
-            <img src={logoImg} alt="FishTokri Logo" className="w-9 h-9 sm:w-12 sm:h-12 object-contain" />
-            <span className="text-lg sm:text-2xl font-display font-medium text-foreground">
+          <Link href="/" className="flex items-center gap-1.5 group">
+            <img src={logoImg} alt="FishTokri Logo" className="w-11 h-11 sm:w-14 sm:h-14 object-contain" />
+            <span className="text-xl sm:text-3xl font-display font-semibold text-foreground leading-none">
               Fish<span className="text-accent">Tokri</span>
             </span>
           </Link>
@@ -41,14 +41,14 @@ export function Header({ onSearch }: { onSearch?: (query: string) => void }) {
           </div>
         )}
 
-        {/* Right: Search icon (mobile) | User | Cart | Location */}
-        <div className="flex items-center gap-0.5 sm:gap-3 shrink-0">
+        {/* Right: Icons */}
+        <div className="flex items-center gap-0.5 sm:gap-2 shrink-0">
           {/* Mobile search icon */}
           {onSearch && (
             <Button
               variant="ghost"
               size="icon"
-              className="sm:hidden text-foreground hover:bg-accent/10 rounded-full"
+              className="sm:hidden text-foreground hover:bg-accent/10 rounded-full w-9 h-9"
               onClick={() => setMobileSearchOpen(v => !v)}
               aria-label="Search"
             >
@@ -60,7 +60,7 @@ export function Header({ onSearch }: { onSearch?: (query: string) => void }) {
           )}
 
           <Link href="/profile">
-            <Button variant="ghost" size="icon" className="text-foreground hover:bg-accent/10 rounded-full">
+            <Button variant="ghost" size="icon" className="text-foreground hover:bg-accent/10 rounded-full w-9 h-9">
               <img src={userImg} alt="Profile" className="w-5 h-5 sm:w-6 sm:h-6 object-contain" />
             </Button>
           </Link>
@@ -69,27 +69,27 @@ export function Header({ onSearch }: { onSearch?: (query: string) => void }) {
             onClick={() => setIsCartOpen(true)}
             variant="ghost"
             size="icon"
-            className="relative text-foreground hover:bg-accent/10 rounded-full"
+            className="relative text-foreground hover:bg-accent/10 rounded-full w-9 h-9"
           >
             <img src={cartImg} alt="Cart" className="w-5 h-5 sm:w-6 sm:h-6 object-contain" />
             {totalItems > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-accent text-white text-[10px] font-bold flex items-center justify-center rounded-full shadow-md animate-in zoom-in">
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 sm:w-5 sm:h-5 bg-accent text-white text-[10px] font-bold flex items-center justify-center rounded-full shadow-md animate-in zoom-in">
                 {totalItems}
               </span>
             )}
           </Button>
 
-          {/* Location — visible on all screen sizes */}
-          <div className="flex items-center gap-1 pl-1 border-l border-border/50 ml-0.5">
-            <img src={locationImg} alt="Location" className="w-3.5 h-3.5 sm:w-4 sm:h-4 object-contain" />
+          {/* Location — all screen sizes */}
+          <div className="flex items-center gap-1 pl-1.5 border-l border-border/50 ml-0.5">
+            <img src={locationImg} alt="Location" className="w-3.5 h-3.5 object-contain" />
             <span className="text-xs sm:text-sm font-medium text-foreground">Mumbai</span>
           </div>
         </div>
       </div>
 
-      {/* Mobile expandable search bar */}
+      {/* Mobile expandable search */}
       {onSearch && mobileSearchOpen && (
-        <div className="sm:hidden px-4 pb-3 border-t border-border/20 pt-2.5 bg-white/95 backdrop-blur-sm">
+        <div className="sm:hidden px-3 pb-2.5 pt-2 border-t border-border/20 bg-white/95 backdrop-blur-sm">
           <div className="relative">
             <img src={searchImg} alt="Search" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 object-contain" />
             <Input
