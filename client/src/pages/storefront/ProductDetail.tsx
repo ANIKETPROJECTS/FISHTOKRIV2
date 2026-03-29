@@ -199,7 +199,7 @@ export default function ProductDetail() {
               ].map(({ label, value, icon }) => (
                 <div key={label} className="flex-1 flex items-center gap-3 py-4 px-4">
                   <div className="flex flex-col items-center shrink-0">
-                    <img src={icon} alt={label} className="w-7 h-7 object-contain opacity-70 dark:invert" />
+                    <img src={icon} alt={label} className="w-7 h-7 object-contain object-bottom dark:invert" />
                     <span className="text-[10px] text-muted-foreground mt-1 font-medium">{label}</span>
                   </div>
                   <span className="text-sm font-bold text-foreground leading-tight">{value}</span>
