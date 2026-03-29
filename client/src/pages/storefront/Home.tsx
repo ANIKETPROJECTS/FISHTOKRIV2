@@ -160,9 +160,9 @@ export default function Home() {
         if (q) setView("category");
       }} />
 
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-5">
         {/* Banner Carousel */}
-        <div className="relative w-full aspect-[21/9] rounded-2xl overflow-hidden mb-8 shadow-lg">
+        <div className="relative w-full aspect-[21/9] rounded-2xl overflow-hidden mb-5 shadow-lg">
           {BANNERS.map((banner, index) => (
             <div
               key={index}
@@ -174,7 +174,7 @@ export default function Home() {
         </div>
 
         {/* Category Row — 12 categories, big images no circle bg */}
-        <div className="mb-10">
+        <div className="mb-6">
           <div
             ref={catScrollRef}
             className="flex overflow-x-auto gap-6 scrollbar-hide snap-x snap-mandatory"
@@ -203,8 +203,8 @@ export default function Home() {
         </div>
 
         {/* Combos Special Section */}
-        <section className="mb-12">
-          <div className="flex items-center gap-2 mb-5">
+        <section className="mb-7">
+          <div className="flex items-center gap-2 mb-3">
             <Tag className="w-5 h-5 text-accent" />
             <h2 className="text-xl sm:text-2xl font-medium text-foreground uppercase tracking-wide">Combos Special</h2>
           </div>
@@ -257,8 +257,8 @@ export default function Home() {
         </section>
 
         {/* Today's Special Section */}
-        <section className="mb-12">
-          <div className="flex items-center justify-between mb-6">
+        <section className="mb-7">
+          <div className="flex items-center justify-between mb-3">
             <h2 className="text-xl sm:text-2xl font-medium text-foreground uppercase tracking-wide">FishTokri Today's Special</h2>
           </div>
           <div ref={specialScrollRef} className="flex overflow-x-auto gap-4 sm:gap-6 scrollbar-hide snap-x">
@@ -275,8 +275,8 @@ export default function Home() {
 
         {/* Category Specials */}
         {["Fish", "Prawns", "Chicken", "Mutton"].map((category) => (
-          <section key={category} className="mb-12">
-            <div className="flex items-center justify-between mb-6">
+          <section key={category} className="mb-7">
+            <div className="flex items-center justify-between mb-3">
               <h2 className="text-xl sm:text-2xl font-medium text-foreground uppercase tracking-wide">{category} Specials</h2>
               <Button variant="link" onClick={() => handleCategoryClick(category)} className="text-accent font-medium p-0">View More</Button>
             </div>

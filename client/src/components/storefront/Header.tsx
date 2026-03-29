@@ -1,8 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { X } from "lucide-react";
 import { CategoryMenuDropdown } from "@/components/storefront/CategoryMenu";
 
@@ -13,14 +12,72 @@ import searchImg from "@assets/search-interface-symbol_1774706690468.png";
 import locationImg from "@assets/placeholder_(1)_1774706943633.png";
 import menuIconImg from "@assets/category_1774778224285.png";
 
+const SEARCH_PHRASES = [
+  "Search for fresh seafood...",
+  "Try Surmai or Pomfret...",
+  "Chicken, Mutton, Prawns...",
+  "Fresh Crab & Lobster...",
+  "Search for Masalas...",
+  "Bombil, Bangda, Rawas...",
+];
+
+function TypewriterPlaceholder() {
+  const [displayed, setDisplayed] = useState("");
+  const [phraseIdx, setPhraseIdx] = useState(0);
+  const [charIdx, setCharIdx] = useState(0);
+  const [deleting, setDeleting] = useState(false);
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    if (paused) {
+      const t = setTimeout(() => setPaused(false), 1400);
+      return () => clearTimeout(t);
+    }
+
+    const phrase = SEARCH_PHRASES[phraseIdx];
+
+    if (!deleting) {
+      if (charIdx < phrase.length) {
+        const t = setTimeout(() => {
+          setDisplayed(phrase.slice(0, charIdx + 1));
+          setCharIdx(c => c + 1);
+        }, 55);
+        return () => clearTimeout(t);
+      } else {
+        setPaused(true);
+        setDeleting(true);
+      }
+    } else {
+      if (charIdx > 0) {
+        const t = setTimeout(() => {
+          setDisplayed(phrase.slice(0, charIdx - 1));
+          setCharIdx(c => c - 1);
+        }, 30);
+        return () => clearTimeout(t);
+      } else {
+        setDeleting(false);
+        setPhraseIdx(i => (i + 1) % SEARCH_PHRASES.length);
+      }
+    }
+  }, [charIdx, deleting, paused, phraseIdx]);
+
+  return (
+    <span className="text-muted-foreground/60 text-sm pointer-events-none select-none">
+      {displayed}
+      <span className="animate-pulse">|</span>
+    </span>
+  );
+}
+
 export function Header({ onSearch }: { onSearch?: (query: string) => void }) {
   const { totalItems, setIsCartOpen } = useCart();
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
-  const headerRef = useRef<HTMLElement>(null);
+  const [searchValue, setSearchValue] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
 
   return (
-    <header ref={headerRef} className="sticky top-0 z-50 glass">
+    <header className="sticky top-0 z-50 glass">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2">
         {/* Left: Logo */}
         <div className="flex items-center shrink-0">
@@ -35,12 +92,24 @@ export function Header({ onSearch }: { onSearch?: (query: string) => void }) {
         {/* Center: Search bar — desktop only */}
         {onSearch && (
           <div className="flex-1 max-w-md relative hidden sm:block">
-            <img src={searchImg} alt="Search" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 object-contain" />
-            <Input
+            <img src={searchImg} alt="Search" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 object-contain z-10" />
+            {/* Typewriter placeholder shown when empty & unfocused */}
+            {!searchValue && !searchFocused && (
+              <div className="absolute left-10 top-1/2 -translate-y-1/2 z-10">
+                <TypewriterPlaceholder />
+              </div>
+            )}
+            <input
               type="search"
-              placeholder="Search for fresh seafood..."
-              className="pl-10 rounded-full bg-muted/50 border-none focus-visible:ring-1 focus-visible:ring-primary/20"
-              onChange={(e) => onSearch(e.target.value)}
+              value={searchValue}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              onChange={(e) => {
+                setSearchValue(e.target.value);
+                onSearch(e.target.value);
+              }}
+              className="w-full pl-10 pr-4 h-10 rounded-full bg-white border border-slate-200 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/10 text-sm transition-all"
+              data-testid="input-search-desktop"
             />
           </div>
         )}
@@ -64,7 +133,7 @@ export function Header({ onSearch }: { onSearch?: (query: string) => void }) {
             </Button>
           )}
 
-          {/* Category menu icon — between search and profile */}
+          {/* Category menu icon */}
           <Button
             variant="ghost"
             size="icon"
@@ -115,13 +184,14 @@ export function Header({ onSearch }: { onSearch?: (query: string) => void }) {
       {onSearch && mobileSearchOpen && (
         <div className="sm:hidden px-3 pb-2.5 pt-2 border-t border-border/20 bg-white/95 backdrop-blur-sm">
           <div className="relative">
-            <img src={searchImg} alt="Search" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 object-contain" />
-            <Input
+            <img src={searchImg} alt="Search" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 object-contain z-10" />
+            <input
               type="search"
               placeholder="Search for fresh seafood..."
-              className="pl-10 rounded-full bg-muted/50 border-none focus-visible:ring-1 focus-visible:ring-primary/20 h-9"
+              className="w-full pl-10 pr-4 h-9 rounded-full bg-white border border-slate-200 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/10 text-sm"
               onChange={(e) => onSearch(e.target.value)}
               autoFocus
+              data-testid="input-search-mobile"
             />
           </div>
         </div>
