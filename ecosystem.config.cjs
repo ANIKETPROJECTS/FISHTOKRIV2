@@ -2,8 +2,9 @@ module.exports = {
   apps: [
     {
       name: "fishtokri",
-      script: "dist/index.cjs",
+      script: "server/index.ts",
       interpreter: "node",
+      interpreter_args: "--import tsx",
       env: {
         NODE_ENV: "production",
         PORT: 3010,
