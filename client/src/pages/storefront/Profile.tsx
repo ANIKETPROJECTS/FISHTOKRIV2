@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import type { OrderRequest } from "@shared/schema";
 import {
-  User, Phone, Mail, MapPin, Plus, Pencil, Trash2,
+  User, MapPin, Plus, Pencil, Trash2,
   CheckCircle2, ChevronLeft, Home, Briefcase, Tag, Navigation,
   ShoppingBag, Clock, Truck, PackageCheck, ChevronDown, ChevronUp,
   Receipt, Package, AlertCircle
@@ -135,8 +135,9 @@ const DEMO_ORDERS = [
   },
 ];
 
-const TABS = ["Profile", "Addresses", "My Orders"] as const;
+const TABS = ["Profile & Addresses", "My Orders"] as const;
 type Tab = typeof TABS[number];
+type OrdersSubTab = "current" | "previous";
 
 function OrderCard({ order }: { order: OrderRequest }) {
   const [expanded, setExpanded] = useState(false);
@@ -292,7 +293,8 @@ function OrderCard({ order }: { order: OrderRequest }) {
 export default function Profile() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<Tab>("Profile");
+  const [activeTab, setActiveTab] = useState<Tab>("Profile & Addresses");
+  const [ordersSubTab, setOrdersSubTab] = useState<OrdersSubTab>("current");
 
   const [profile, setProfile] = useState<ProfileData>({ name: "", phone: "", email: "", dob: "" });
   const [editingProfile, setEditingProfile] = useState(false);
@@ -419,16 +421,16 @@ export default function Profile() {
               }`}
               data-testid={`tab-${tab.toLowerCase().replace(/\s+/g, "-")}`}
             >
-              {tab === "Profile" && <User className="w-3.5 h-3.5" />}
-              {tab === "Addresses" && <MapPin className="w-3.5 h-3.5" />}
+              {tab === "Profile & Addresses" && <User className="w-3.5 h-3.5" />}
               {tab === "My Orders" && <ShoppingBag className="w-3.5 h-3.5" />}
               {tab}
             </button>
           ))}
         </div>
 
-        {/* ── Profile Tab ── */}
-        {activeTab === "Profile" && (
+        {/* ── Profile & Addresses Tab ── */}
+        {activeTab === "Profile & Addresses" && (
+          <div className="space-y-5">
           <div className="bg-white rounded-2xl border border-border/50 shadow-sm p-6">
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
@@ -487,10 +489,8 @@ export default function Profile() {
               </div>
             )}
           </div>
-        )}
 
-        {/* ── Addresses Tab ── */}
-        {activeTab === "Addresses" && (
+          {/* Addresses section — inside Profile & Addresses tab */}
           <div className="bg-white rounded-2xl border border-border/50 shadow-sm p-6">
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
@@ -619,59 +619,66 @@ export default function Profile() {
               </div>
             )}
           </div>
+          </div>
         )}
 
         {/* ── My Orders Tab ── */}
         {activeTab === "My Orders" && (
-          <div className="space-y-5">
+          <div className="space-y-4">
+            {/* Sub-tabs */}
+            <div className="flex gap-1 bg-white rounded-2xl p-1 border border-border/40 shadow-sm">
+              <button
+                onClick={() => setOrdersSubTab("current")}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-semibold transition-all ${ordersSubTab === "current" ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                data-testid="tab-current-orders"
+              >
+                <div className={`w-1.5 h-1.5 rounded-full ${ordersSubTab === "current" ? "bg-white animate-pulse" : "bg-orange-400 animate-pulse"}`} />
+                Current Orders
+                {currentOrders.length > 0 && (
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${ordersSubTab === "current" ? "bg-white/20 text-white" : "bg-orange-100 text-orange-700"}`}>{currentOrders.length}</span>
+                )}
+              </button>
+              <button
+                onClick={() => setOrdersSubTab("previous")}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-semibold transition-all ${ordersSubTab === "previous" ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                data-testid="tab-previous-orders"
+              >
+                <PackageCheck className="w-3.5 h-3.5" />
+                Previous Orders
+                {previousOrders.length > 0 && (
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${ordersSubTab === "previous" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"}`}>{previousOrders.length}</span>
+                )}
+              </button>
+            </div>
+
             {ordersLoading ? (
               <div className="space-y-4">
                 {[1, 2].map(i => <Skeleton key={i} className="h-40 rounded-2xl" />)}
               </div>
+            ) : ordersSubTab === "current" ? (
+              currentOrders.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-border/40 p-8 text-center">
+                  <ShoppingBag className="w-10 h-10 mx-auto mb-3 text-muted-foreground opacity-20" />
+                  <p className="text-sm font-medium text-muted-foreground">No active orders right now</p>
+                  <p className="text-xs text-muted-foreground/70 mt-1">Orders you place will appear here</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {currentOrders.map(order => <OrderCard key={order.id} order={order} />)}
+                </div>
+              )
             ) : (
-              <>
-                {/* Current Orders */}
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
-                    <h2 className="text-sm font-bold text-foreground uppercase tracking-wide">Current Orders</h2>
-                    {currentOrders.length > 0 && (
-                      <span className="ml-auto text-xs bg-orange-100 text-orange-700 font-semibold px-2 py-0.5 rounded-full">{currentOrders.length}</span>
-                    )}
-                  </div>
-                  {currentOrders.length === 0 ? (
-                    <div className="bg-white rounded-2xl border border-border/40 p-6 text-center">
-                      <ShoppingBag className="w-8 h-8 mx-auto mb-2 text-muted-foreground opacity-20" />
-                      <p className="text-sm text-muted-foreground">No active orders right now</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {currentOrders.map(order => <OrderCard key={order.id} order={order} />)}
-                    </div>
-                  )}
+              previousOrders.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-border/40 p-8 text-center">
+                  <PackageCheck className="w-10 h-10 mx-auto mb-3 text-muted-foreground opacity-20" />
+                  <p className="text-sm font-medium text-muted-foreground">No previous orders yet</p>
+                  <p className="text-xs text-muted-foreground/70 mt-1">Completed & cancelled orders show here</p>
                 </div>
-
-                {/* Previous Orders */}
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-2 h-2 rounded-full bg-slate-400" />
-                    <h2 className="text-sm font-bold text-foreground uppercase tracking-wide">Previous Orders</h2>
-                    {previousOrders.length > 0 && (
-                      <span className="ml-auto text-xs bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded-full">{previousOrders.length}</span>
-                    )}
-                  </div>
-                  {previousOrders.length === 0 ? (
-                    <div className="bg-white rounded-2xl border border-border/40 p-6 text-center">
-                      <PackageCheck className="w-8 h-8 mx-auto mb-2 text-muted-foreground opacity-20" />
-                      <p className="text-sm text-muted-foreground">No previous orders yet</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {previousOrders.map(order => <OrderCard key={order.id} order={order} />)}
-                    </div>
-                  )}
+              ) : (
+                <div className="space-y-3">
+                  {previousOrders.map(order => <OrderCard key={order.id} order={order} />)}
                 </div>
-              </>
+              )
             )}
           </div>
         )}

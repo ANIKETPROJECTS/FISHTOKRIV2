@@ -2,17 +2,26 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import {
   CheckCircle2, Minus, Plus, ShoppingBag, Trash2,
-  MapPin, Banknote, CreditCard, ChevronRight, ClipboardList
+  MapPin, Banknote, CreditCard, ChevronRight, ClipboardList,
+  Tag, X, Copy, Check, ChevronDown
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useCreateOrder } from "@/hooks/use-orders";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
 import fishImg from "@assets/Gemini_Generated_Image_w6wqkkw6wqkkw6wq_(1)_1772713077919.png";
 import prawnsImg from "@assets/Gemini_Generated_Image_5xy0sd5xy0sd5xy0_1772713090650.png";
 import chickenImg from "@assets/Gemini_Generated_Image_g0ecb4g0ecb4g0ec_1772713219972.png";
 import muttonImg from "@assets/Gemini_Generated_Image_8fq0338fq0338fq0_1772713565349.png";
 import masalaImg from "@assets/Gemini_Generated_Image_4e60a64e60a64e60_1772713888468.png";
+
+const COUPONS = [
+  { code: "FRESH10", desc: "10% off on your first order", discount: 10, type: "percent" as const },
+  { code: "SAVE15", desc: "15% off on orders above ₹500", discount: 15, type: "percent" as const, minOrder: 500 },
+  { code: "TOKRI20", desc: "20% off for FishTokri members", discount: 20, type: "percent" as const },
+];
 import {
   Sheet,
   SheetContent,
