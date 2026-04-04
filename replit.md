@@ -1,63 +1,63 @@
 # FishTokri
 
-A mobile-first, full-stack web application for a Mumbai-based online fresh fish, seafood, and meat retailer. Customers can browse today's fresh stock and submit order requests, while employees manage inventory and orders through a protected admin panel.
+A mobile-first, full-stack web application for an online fresh fish, seafood, and meat retailer based in Mumbai. Provides a premium, app-like storefront for customers and a protected admin panel for inventory and order management.
 
 ## Tech Stack
 
-- **Frontend**: React + TypeScript, Vite, Tailwind CSS, Shadcn/UI, Wouter (routing), TanStack Query, Framer Motion
-- **Backend**: Node.js, Express, Passport.js (local auth), Mongoose, Zod validation
-- **Database**: MongoDB (Mongoose) for all persistent data (products, orders, users, sessions)
-- **Images**: Stored in-memory on the server (lost on restart; re-upload after redeploy)
+- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, Framer Motion
+- **Backend**: Node.js, Express 5
+- **Database**: MongoDB with Mongoose ODM
+- **Auth**: Passport.js (local strategy) with session-based auth via connect-mongo
+- **State/Data**: TanStack Query (React Query), React Context (cart)
+- **Routing**: wouter
+- **UI Components**: Radix UI / shadcn-ui, Lucide icons, Embla Carousel
 
 ## Project Structure
 
-- `/client` - React frontend application
-  - `/src/components` - UI components (admin, storefront, ui/Shadcn)
-  - `/src/pages` - Page-level components (Home, Products, Orders)
-  - `/src/hooks` - Custom hooks for Auth, Cart, data fetching
-  - `/src/context` - React context providers
-- `/server` - Express backend
-  - `index.ts` - App entry point, serves on port 5000
-  - `routes.ts` - API endpoints + MongoDB seeding on first run
-  - `storage.ts` - Data access layer (MongoStorage)
-  - `auth.ts` - Passport.js + MongoDB session store (connect-mongo)
-  - `db.ts` - Mongoose connection + schemas
-  - `imageStore.ts` - In-memory image storage (Map-based)
-- `/shared` - Shared code between frontend and backend
-  - `schema.ts` - TypeScript types + Zod validation schemas
-  - `routes.ts` - API route path constants
-
-## Running the App
-
-- Development: `npm run dev` (starts tsx server + Vite dev server)
-- Build: `npm run build`
-- Production (VPS): `npm run build` then `pm2 start ecosystem.config.cjs`
+- `client/` — React frontend (Vite)
+  - `src/components/storefront/` — Customer-facing components
+  - `src/components/admin/` — Admin panel components
+  - `src/components/ui/` — Shared Radix/shadcn UI components
+  - `src/pages/storefront/` — Storefront pages (Home, Product Detail, Profile)
+  - `src/pages/admin/` — Admin pages (Dashboard, Orders, Products)
+  - `src/hooks/` — Custom React hooks
+  - `src/context/` — Cart context
+- `server/` — Express backend
+  - `index.ts` — Entry point, middleware setup
+  - `routes.ts` — API route definitions
+  - `db.ts` — MongoDB connection and Mongoose models
+  - `storage.ts` — Data access layer (IStorage interface)
+  - `auth.ts` — Passport.js authentication
+  - `vite.ts` — Vite dev server middleware (development only)
+  - `static.ts` — Static file serving (production only)
+  - `imageStore.ts` — Image storage handling
+- `shared/` — Shared TypeScript types and Zod schemas
+- `script/` — Build scripts
 
 ## Environment Variables
 
-- `MONGODB_URI` - MongoDB connection string (set in ecosystem.config.cjs for VPS)
-- `MONGODB_DB` - Database name (default: fishtokri)
-- `PORT` - Server port (default: 5000, VPS uses 3010)
-- `SESSION_SECRET` - Session secret for Passport.js
+- `MONGODB_URI` — MongoDB connection string (required, set as a secret)
+- `MONGODB_DB` — Database name (optional, defaults to "fishtokri")
+- `SESSION_SECRET` — Express session secret (recommended for production)
+- `PORT` — Server port (defaults to 5000)
 
-## VPS Deployment
+## Running the App
 
-The `ecosystem.config.cjs` already contains the MongoDB URI and all required env vars.
-Steps:
-1. Pull latest code
-2. `npm install`
-3. `npm run build`
-4. `pm2 start ecosystem.config.cjs`
-
-## Default Admin Credentials
-
-The app auto-creates a default admin on first run: `admin` / `admin`
+- **Development**: `npm run dev` — starts the Express server with Vite middleware
+- **Build**: `npm run build` — builds the frontend to `dist/public`
+- **Production**: `npm start` — serves the built frontend + API
 
 ## Key Features
 
-- Customer storefront with category browsing (Fish, Prawns, Chicken, Mutton, Masalas)
-- Real-time availability badges (Available, Unavailable, Limited)
-- Cart and checkout flow for order requests
-- Admin panel with product CRUD and bulk availability updates
-- Order status tracking (Pending, Confirmed, Shipped, etc.)
-- Auto-seeds 48 products on first run if MongoDB collection is empty
+### Customer Storefront
+- Dynamic product browsing with category filters (Fish, Prawns, Chicken, Mutton, Masalas, etc.)
+- Carousel banners, "Today's Fresh Catch" hero section
+- Shopping cart with slide-up drawer and order request flow
+- Availability badges, combo specials
+
+### Admin Panel
+- Secure login (session-based auth)
+- Dashboard with summary statistics and availability toggles
+- Full CRUD for products and categories
+- Order management (pending/confirmed)
+- Carousel slide management
