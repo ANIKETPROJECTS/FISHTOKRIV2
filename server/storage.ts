@@ -1,4 +1,4 @@
-import { UserModel, ProductModel, OrderModel, CarouselModel, CategoryModel } from "./db";
+import { UserModel, ProductModel, OrderModel, CarouselModel, CategoryModel, SectionModel } from "./db";
 import type {
   User,
   InsertUser,
@@ -11,6 +11,8 @@ import type {
   InsertCarouselSlide,
   Category,
   InsertCategory,
+  Section,
+  InsertSection,
 } from "@shared/schema";
 
 function toUser(doc: any): User {
@@ -33,6 +35,17 @@ function toProduct(doc: any): Product {
     imageUrl: doc.imageUrl ?? null,
     isArchived: doc.isArchived ?? false,
     updatedAt: doc.updatedAt,
+    sectionId: doc.sectionId ?? null,
+  };
+}
+
+function toSection(doc: any): Section {
+  return {
+    id: doc._id.toString(),
+    title: doc.title,
+    type: doc.type ?? "products",
+    sortOrder: doc.sortOrder ?? 0,
+    isActive: doc.isActive ?? true,
   };
 }
 
@@ -102,6 +115,11 @@ export interface IStorage {
   upsertCategory(name: string, data: InsertCategory): Promise<Category>;
   updateCategory(id: string, updates: Partial<InsertCategory>): Promise<Category | undefined>;
   deleteCategory(id: string): Promise<void>;
+
+  getSections(): Promise<Section[]>;
+  createSection(section: InsertSection): Promise<Section>;
+  updateSection(id: string, updates: Partial<InsertSection>): Promise<Section | undefined>;
+  deleteSection(id: string): Promise<void>;
 }
 
 export class MongoStorage implements IStorage {
@@ -263,6 +281,37 @@ export class MongoStorage implements IStorage {
   async deleteCategory(id: string): Promise<void> {
     try {
       await CategoryModel.findByIdAndUpdate(id, { isActive: false });
+    } catch {
+      // ignore
+    }
+  }
+
+  async getSections(): Promise<Section[]> {
+    const docs = await SectionModel.find({ isActive: true }).sort({ sortOrder: 1 }).lean();
+    return docs.map(toSection);
+  }
+
+  async createSection(section: InsertSection): Promise<Section> {
+    const doc = await SectionModel.create({
+      ...section,
+      type: section.type ?? "products",
+      isActive: section.isActive ?? true,
+    });
+    return toSection(doc);
+  }
+
+  async updateSection(id: string, updates: Partial<InsertSection>): Promise<Section | undefined> {
+    try {
+      const doc = await SectionModel.findByIdAndUpdate(id, { $set: updates }, { new: true }).lean();
+      return doc ? toSection(doc) : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  async deleteSection(id: string): Promise<void> {
+    try {
+      await SectionModel.findByIdAndDelete(id);
     } catch {
       // ignore
     }

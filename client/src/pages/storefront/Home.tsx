@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type RefObject } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { Header } from "@/components/storefront/Header";
 import { ProductCard } from "@/components/storefront/ProductCard";
@@ -12,13 +12,12 @@ import { useLocation } from "wouter";
 import { ChevronLeft, Tag } from "lucide-react";
 import { COMBOS_DATA } from "@/pages/storefront/ComboDetail";
 import { useQuery } from "@tanstack/react-query";
-import type { CarouselSlide, Category } from "@shared/schema";
+import type { CarouselSlide, Category, Section } from "@shared/schema";
 
 import welcomeAudio from "@assets/ElevenLabs_2026-03-05T15_00_59_Bella_-_Professional,_Bright,_W_1772722955169.mp3";
 
 function ComboImages({ images }: { images: string[] }) {
   const n = images.length;
-  // Each image occupies equal share + a bit extra for overlap, positioned at even intervals
   const slotPct = 100 / n;
   const widthPct = n === 1 ? 100 : slotPct + slotPct * 0.45;
 
@@ -34,12 +33,7 @@ function ComboImages({ images }: { images: string[] }) {
             zIndex: i,
           }}
         >
-          <img
-            src={img}
-            alt=""
-            className="w-full h-full object-cover"
-          />
-          {/* Soft shadow on right edge for depth */}
+          <img src={img} alt="" className="w-full h-full object-cover" />
           {i < n - 1 && (
             <div className="absolute top-0 right-0 bottom-0 w-4 bg-gradient-to-r from-transparent to-black/10" />
           )}
@@ -53,6 +47,7 @@ export default function Home() {
   const { data: products, isLoading } = useProducts();
   const { data: carouselSlides = [] } = useQuery<CarouselSlide[]>({ queryKey: ["/api/carousel"] });
   const { data: categories = [] } = useQuery<Category[]>({ queryKey: ["/api/categories"] });
+  const { data: sections = [] } = useQuery<Section[]>({ queryKey: ["/api/sections"] });
   const { addToCart } = useCart();
   const [activeCategory, setActiveCategory] = useState("All");
   const [currentBanner, setCurrentBanner] = useState(0);
@@ -62,12 +57,6 @@ export default function Home() {
   const [, navigate] = useLocation();
 
   const catScrollRef = useRef<HTMLDivElement>(null);
-  const comboScrollRef = useRef<HTMLDivElement>(null);
-  const specialScrollRef = useRef<HTMLDivElement>(null);
-  const fishScrollRef = useRef<HTMLDivElement>(null);
-  const prawnsScrollRef = useRef<HTMLDivElement>(null);
-  const chickenScrollRef = useRef<HTMLDivElement>(null);
-  const muttonScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const hasVisited = localStorage.getItem("fishtokri_visited");
@@ -107,15 +96,8 @@ export default function Home() {
     return p.category === activeCategory && matchesSearch;
   }) || [];
 
-  const getSectionProducts = (category: string) => {
-    return products?.filter(p => !p.isArchived && (category === "Today's Special" ? true : p.category === category)).slice(0, 6) || [];
-  };
-
-  const sectionRefs: Record<string, RefObject<HTMLDivElement>> = {
-    Fish: fishScrollRef,
-    Prawns: prawnsScrollRef,
-    Chicken: chickenScrollRef,
-    Mutton: muttonScrollRef,
+  const getSectionProducts = (sectionId: string) => {
+    return products?.filter(p => !p.isArchived && p.sectionId === sectionId).slice(0, 10) || [];
   };
 
   if (view === "category") {
@@ -178,7 +160,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* Category Row — 12 categories, big images no circle bg */}
+        {/* Category Row */}
         <div className="mb-6">
           <div
             ref={catScrollRef}
@@ -213,96 +195,94 @@ export default function Home() {
           <SwipeHint />
         </div>
 
-        {/* Combos Special Section */}
-        <section className="mb-7">
-          <div className="flex items-center gap-2 mb-3">
-            <Tag className="w-5 h-5 text-accent" />
-            <h2 className="text-xl sm:text-2xl font-medium text-foreground uppercase tracking-wide">Combos Special</h2>
-          </div>
-          <div ref={comboScrollRef} className="flex overflow-x-auto gap-4 sm:gap-5 scrollbar-hide snap-x">
-            {COMBOS_DATA.map(combo => (
-              <div key={combo.id} className="min-w-[200px] sm:min-w-[230px] snap-start flex-none">
-                <div className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                  {/* Full-bleed images — no bg, no circles */}
-                  <Link href={`/combo/${combo.id}`}>
-                    <div className="h-36 overflow-hidden rounded-t-2xl cursor-pointer">
-                      <ComboImages images={combo.images} />
-                    </div>
-                  </Link>
-                  <div className="p-3">
-                    <Link href={`/combo/${combo.id}`}>
-                      <h3 className="font-semibold text-foreground text-sm leading-tight truncate cursor-pointer hover:text-primary">{combo.name}</h3>
-                    </Link>
-                    <p className="text-xs text-muted-foreground mt-0.5 truncate">{combo.description}</p>
-                    <div className="flex items-center justify-between mt-2.5">
-                      <div>
-                        <span className="text-sm font-bold text-primary">₹{combo.discountedPrice}</span>
-                        <span className="text-xs text-muted-foreground line-through ml-1.5">₹{combo.originalPrice}</span>
+        {/* Dynamic Sections from DB */}
+        {sections.map((section) => {
+          if (section.type === "combos") {
+            return (
+              <section key={section.id} className="mb-7">
+                <div className="flex items-center gap-2 mb-3">
+                  <Tag className="w-5 h-5 text-accent" />
+                  <h2 className="text-xl sm:text-2xl font-medium text-foreground uppercase tracking-wide">
+                    {section.title}
+                  </h2>
+                </div>
+                <div className="flex overflow-x-auto gap-4 sm:gap-5 scrollbar-hide snap-x">
+                  {COMBOS_DATA.map(combo => (
+                    <div key={combo.id} className="min-w-[200px] sm:min-w-[230px] snap-start flex-none">
+                      <div className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                        <Link href={`/combo/${combo.id}`}>
+                          <div className="h-36 overflow-hidden rounded-t-2xl cursor-pointer">
+                            <ComboImages images={combo.images} />
+                          </div>
+                        </Link>
+                        <div className="p-3">
+                          <Link href={`/combo/${combo.id}`}>
+                            <h3 className="font-semibold text-foreground text-sm leading-tight truncate cursor-pointer hover:text-primary">{combo.name}</h3>
+                          </Link>
+                          <p className="text-xs text-muted-foreground mt-0.5 truncate">{combo.description}</p>
+                          <div className="flex items-center justify-between mt-2.5">
+                            <div>
+                              <span className="text-sm font-bold text-primary">₹{combo.discountedPrice}</span>
+                              <span className="text-xs text-muted-foreground line-through ml-1.5">₹{combo.originalPrice}</span>
+                            </div>
+                            <button
+                              onClick={() => addToCart({
+                                id: combo.cartId,
+                                name: combo.name,
+                                price: combo.discountedPrice,
+                                category: "Combo",
+                                status: "available",
+                                unit: combo.weight,
+                                imageUrl: null,
+                                isArchived: false,
+                                updatedAt: new Date(),
+                                limitedStockNote: null,
+                                sectionId: null,
+                                isCombo: true,
+                              } as any)}
+                              className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-xl font-light hover:bg-primary/90 transition-colors shadow-md shadow-primary/20"
+                              data-testid={`button-add-combo-${combo.id}`}
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                      <button
-                        onClick={() => addToCart({
-                          id: combo.cartId,
-                          name: combo.name,
-                          price: combo.discountedPrice,
-                          category: "Combo",
-                          status: "available",
-                          unit: combo.weight,
-                          imageUrl: null,
-                          isArchived: false,
-                          updatedAt: new Date(),
-                          limitedStockNote: null,
-                          isCombo: true,
-                        } as any)}
-                        className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-xl font-light hover:bg-primary/90 transition-colors shadow-md shadow-primary/20"
-                        data-testid={`button-add-combo-${combo.id}`}
-                      >
-                        +
-                      </button>
                     </div>
-                  </div>
+                  ))}
                 </div>
+                <SwipeHint />
+              </section>
+            );
+          }
+
+          // "products" type section
+          const sectionProducts = getSectionProducts(section.id);
+          return (
+            <section key={section.id} className="mb-7">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xl sm:text-2xl font-medium text-foreground uppercase tracking-wide">
+                  {section.title}
+                </h2>
               </div>
-            ))}
-          </div>
-          <SwipeHint />
-        </section>
-
-        {/* Today's Special Section */}
-        <section className="mb-7">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xl sm:text-2xl font-medium text-foreground uppercase tracking-wide">FishTokri Today's Special</h2>
-          </div>
-          <div ref={specialScrollRef} className="flex overflow-x-auto gap-4 sm:gap-6 scrollbar-hide snap-x">
-            {isLoading ? [1,2,3,4,5,6].map(i => <Skeleton key={i} className="min-w-[240px] sm:min-w-[280px] h-[340px] sm:h-[380px] rounded-3xl" />) :
-              getSectionProducts("Today's Special").map(product => (
-                <div key={product.id} className="min-w-[240px] sm:min-w-[280px] snap-start">
-                  <ProductCard product={product} />
-                </div>
-              ))
-            }
-          </div>
-          <SwipeHint />
-        </section>
-
-        {/* Category Specials */}
-        {["Fish", "Prawns", "Chicken", "Mutton"].map((category) => (
-          <section key={category} className="mb-7">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-xl sm:text-2xl font-medium text-foreground uppercase tracking-wide">{category} Specials</h2>
-              <Button variant="link" onClick={() => handleCategoryClick(category)} className="text-accent font-medium p-0">View More</Button>
-            </div>
-            <div ref={sectionRefs[category]} className="flex overflow-x-auto gap-4 sm:gap-6 scrollbar-hide snap-x">
-              {isLoading ? [1,2,3,4,5,6].map(i => <Skeleton key={i} className="min-w-[240px] sm:min-w-[280px] h-[340px] sm:h-[380px] rounded-3xl" />) :
-                getSectionProducts(category).map(product => (
-                  <div key={product.id} className="min-w-[240px] sm:min-w-[280px] snap-start">
-                    <ProductCard product={product} />
-                  </div>
-                ))
-              }
-            </div>
-            <SwipeHint />
-          </section>
-        ))}
+              <div className="flex overflow-x-auto gap-4 sm:gap-6 scrollbar-hide snap-x">
+                {isLoading
+                  ? [1,2,3,4,5,6].map(i => <Skeleton key={i} className="min-w-[240px] sm:min-w-[280px] h-[340px] sm:h-[380px] rounded-3xl" />)
+                  : sectionProducts.length > 0
+                    ? sectionProducts.map(product => (
+                        <div key={product.id} className="min-w-[240px] sm:min-w-[280px] snap-start">
+                          <ProductCard product={product} />
+                        </div>
+                      ))
+                    : (
+                        <p className="text-sm text-muted-foreground py-4">No products in this section yet.</p>
+                      )
+                }
+              </div>
+              {sectionProducts.length > 0 && <SwipeHint />}
+            </section>
+          );
+        })}
       </main>
 
       <CartDrawer />

@@ -3,8 +3,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Edit2, Trash2, CheckCircle2, MoreVertical } from "lucide-react";
 import { insertProductSchema } from "@shared/schema";
-import type { InsertProduct, Product } from "@shared/schema";
+import type { InsertProduct, Product, Section } from "@shared/schema";
 import { useProducts, useCreateProduct, useUpdateProduct, useBulkUpdateStatus, useDeleteProduct } from "@/hooks/use-products";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -134,7 +135,10 @@ function DeleteAction({ id }: { id: number }) {
 function ProductDialog({ open, onOpenChange, product }: { open: boolean, onOpenChange: (v: boolean) => void, product?: Product }) {
   const { mutate: create, isPending: isCreating } = useCreateProduct();
   const { mutate: update, isPending: isUpdating } = useUpdateProduct();
+  const { data: sections = [] } = useQuery<Section[]>({ queryKey: ["/api/sections"] });
   const isPending = isCreating || isUpdating;
+
+  const productSections = sections.filter(s => s.type === "products");
 
   const form = useForm<InsertProduct>({
     resolver: zodResolver(insertProductSchema),
@@ -146,16 +150,18 @@ function ProductDialog({ open, onOpenChange, product }: { open: boolean, onOpenC
       imageUrl: product.imageUrl || '',
       status: product.status,
       limitedStockNote: product.limitedStockNote || '',
+      sectionId: product.sectionId || null,
     } : {
-      name: '', category: 'Fish', price: 0, unit: 'per kg', imageUrl: '', status: 'available', limitedStockNote: ''
+      name: '', category: 'Fish', price: 0, unit: 'per kg', imageUrl: '', status: 'available', limitedStockNote: '', sectionId: null,
     }
   });
 
   const onSubmit = (data: InsertProduct) => {
+    const payload = { ...data, sectionId: data.sectionId || null };
     if (product) {
-      update({ id: product.id, ...data }, { onSuccess: () => onOpenChange(false) });
+      update({ id: product.id, ...payload }, { onSuccess: () => onOpenChange(false) });
     } else {
-      create(data, { onSuccess: () => onOpenChange(false) });
+      create(payload, { onSuccess: () => onOpenChange(false) });
     }
   };
 
@@ -186,6 +192,24 @@ function ProductDialog({ open, onOpenChange, product }: { open: boolean, onOpenC
               )} />
               <FormField control={form.control} name="imageUrl" render={({ field }) => (
                 <FormItem className="col-span-2"><FormLabel>Image URL (optional)</FormLabel><FormControl><Input placeholder="https://..." {...field} value={field.value || ''} /></FormControl></FormItem>
+              )} />
+              <FormField control={form.control} name="sectionId" render={({ field }) => (
+                <FormItem className="col-span-2">
+                  <FormLabel>Homepage Section</FormLabel>
+                  <Select
+                    onValueChange={(val) => field.onChange(val === "__none__" ? null : val)}
+                    value={field.value ?? "__none__"}
+                  >
+                    <FormControl><SelectTrigger><SelectValue placeholder="None (not shown in any section)" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      <SelectItem value="__none__">— None —</SelectItem>
+                      {productSections.map(s => (
+                        <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
               )} />
               {form.watch("status") === "limited" && (
                 <FormField control={form.control} name="limitedStockNote" render={({ field }) => (

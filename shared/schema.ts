@@ -22,6 +22,7 @@ export type Product = {
   imageUrl: string | null;
   isArchived: boolean;
   updatedAt: Date;
+  sectionId: string | null;
 };
 
 export type InsertProduct = {
@@ -32,9 +33,25 @@ export type InsertProduct = {
   price?: number | null;
   unit?: string | null;
   imageUrl?: string | null;
+  sectionId?: string | null;
 };
 
 export type UpdateProductRequest = Partial<InsertProduct> & { isArchived?: boolean };
+
+export type Section = {
+  id: string;
+  title: string;
+  type: "products" | "combos";
+  sortOrder: number;
+  isActive: boolean;
+};
+
+export type InsertSection = {
+  title: string;
+  type?: "products" | "combos";
+  sortOrder?: number;
+  isActive?: boolean;
+};
 
 export type OrderItem = {
   productId: string;
@@ -72,6 +89,14 @@ export const insertProductSchema = z.object({
   price: z.number().nullable().optional(),
   unit: z.string().nullable().optional(),
   imageUrl: z.string().nullable().optional(),
+  sectionId: z.string().nullable().optional(),
+});
+
+export const insertSectionSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  type: z.enum(["products", "combos"]).optional(),
+  sortOrder: z.number().optional(),
+  isActive: z.boolean().optional(),
 });
 
 export const insertOrderRequestSchema = z.object({

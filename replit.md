@@ -54,6 +54,7 @@ A mobile-first, full-stack web application for an online fresh fish, seafood, an
 - Carousel banners, "Today's Fresh Catch" hero section
 - Shopping cart with slide-up drawer and order request flow
 - Availability badges, combo specials
+- Homepage sections driven by MongoDB `sections` collection — fully dynamic
 
 ### Admin Panel
 - Secure login (session-based auth)
@@ -61,3 +62,5 @@ A mobile-first, full-stack web application for an online fresh fish, seafood, an
 - Full CRUD for products and categories
 - Order management (pending/confirmed)
 - Carousel slide management
+- **Sections management** (`/admin/sections`) — create/edit/delete homepage sections; sections have a `type` ("products" or "combos"), `sortOrder`, and `isActive` toggle
+- Products have a `sectionId` field to assign them to a specific homepage section

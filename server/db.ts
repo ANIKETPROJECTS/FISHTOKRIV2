@@ -31,6 +31,14 @@ const productSchema = new mongoose.Schema({
   imageUrl: { type: String, default: null },
   isArchived: { type: Boolean, default: false },
   updatedAt: { type: Date, default: Date.now },
+  sectionId: { type: String, default: null },
+});
+
+const sectionSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  type: { type: String, default: "products" },
+  sortOrder: { type: Number, default: 0 },
+  isActive: { type: Boolean, default: true },
 });
 
 const orderSchema = new mongoose.Schema({
@@ -70,3 +78,4 @@ export const ProductModel = mongoose.models.Product || mongoose.model("Product",
 export const OrderModel = mongoose.models.Order || mongoose.model("Order", orderSchema);
 export const CarouselModel = mongoose.models.Carousel || mongoose.model("Carousel", carouselSchema);
 export const CategoryModel = mongoose.models.Category || mongoose.model("Category", categorySchema);
+export const SectionModel = mongoose.models.Section || mongoose.model("Section", sectionSchema);

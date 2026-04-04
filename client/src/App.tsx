@@ -16,6 +16,7 @@ import Login from "@/pages/admin/Login";
 import Dashboard from "@/pages/admin/Dashboard";
 import Products from "@/pages/admin/Products";
 import Orders from "@/pages/admin/Orders";
+import SectionsAdmin from "@/pages/admin/Sections";
 import AdminLayout from "@/components/admin/AdminLayout";
 
 function Router() {
@@ -39,6 +40,10 @@ function Router() {
 
       <Route path="/admin/orders" component={() => (
         <AdminLayout><Orders /></AdminLayout>
+      )} />
+
+      <Route path="/admin/sections" component={() => (
+        <AdminLayout><SectionsAdmin /></AdminLayout>
       )} />
 
       <Route component={NotFound} />

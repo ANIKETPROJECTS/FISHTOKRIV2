@@ -7,7 +7,7 @@ import passport from "passport";
 import { setupAuth } from "./auth";
 import { connectDB } from "./db";
 import { setImage, getImage, deleteImage } from "./imageStore";
-import { insertCarouselSlideSchema, insertCategorySchema } from "@shared/schema";
+import { insertCarouselSlideSchema, insertCategorySchema, insertSectionSchema } from "@shared/schema";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -245,6 +245,44 @@ export async function registerRoutes(
 
   app.delete("/api/categories/:id", requireAuth, async (req, res) => {
     await storage.deleteCategory(req.params.id);
+    res.status(204).end();
+  });
+
+  // Sections routes
+  app.get("/api/sections", async (req, res) => {
+    const sections = await storage.getSections();
+    res.json(sections);
+  });
+
+  app.post("/api/sections", requireAuth, async (req, res) => {
+    try {
+      const input = insertSectionSchema.parse(req.body);
+      const section = await storage.createSection(input);
+      res.status(201).json(section);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.patch("/api/sections/:id", requireAuth, async (req, res) => {
+    try {
+      const input = insertSectionSchema.partial().parse(req.body);
+      const section = await storage.updateSection(req.params.id, input);
+      if (!section) return res.status(404).json({ message: "Section not found" });
+      res.json(section);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/sections/:id", requireAuth, async (req, res) => {
+    await storage.deleteSection(req.params.id);
     res.status(204).end();
   });
 

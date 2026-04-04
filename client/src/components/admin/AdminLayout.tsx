@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { useUser, useLogout } from "@/hooks/use-auth";
-import { LayoutDashboard, Package, ClipboardList, LogOut, Fish } from "lucide-react";
+import { LayoutDashboard, Package, ClipboardList, LogOut, Fish, LayoutList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
@@ -22,6 +22,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
     { label: "Products", href: "/admin/products", icon: Package },
     { label: "Orders", href: "/admin/orders", icon: ClipboardList },
+    { label: "Sections", href: "/admin/sections", icon: LayoutList },
   ];
 
   return (
