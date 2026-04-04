@@ -83,9 +83,7 @@ export default function Home() {
   }, [view, carouselSlides.length]);
 
   const handleCategoryClick = (catName: string) => {
-    setActiveCategory(catName);
-    setView("category");
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigate(`/category/${encodeURIComponent(catName)}`);
   };
 
   const filteredProducts = products?.filter((p) => {

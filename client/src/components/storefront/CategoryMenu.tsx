@@ -121,14 +121,12 @@ export function CategoryMenuDropdown({ open, onClose }: Props) {
 
   const handleSubcategoryClick = (sub: string) => {
     onClose();
-    navigate(`/?category=${encodeURIComponent(activeCategory)}&q=${encodeURIComponent(sub)}`);
-    window.dispatchEvent(new CustomEvent("fishtokri-category-select", { detail: { category: activeCategory } }));
+    navigate(`/category/${encodeURIComponent(activeCategory)}?sub=${encodeURIComponent(sub)}`);
   };
 
   const handleCategoryClick = (cat: string) => {
     onClose();
-    window.dispatchEvent(new CustomEvent("fishtokri-category-select", { detail: { category: cat } }));
-    navigate("/");
+    navigate(`/category/${encodeURIComponent(cat)}`);
   };
 
   return (
