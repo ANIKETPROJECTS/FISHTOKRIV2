@@ -182,6 +182,20 @@ export type CustomerAddress = {
   instructions: string;
 };
 
+export type EmbeddedOrder = {
+  orderId: string;
+  customerName: string;
+  phone: string;
+  deliveryArea: string;
+  address: string;
+  items: OrderItem[];
+  status: string;
+  notes: string | null;
+  total: number | null;
+  placedAt: Date;
+  updatedAt: Date;
+};
+
 export type Customer = {
   id: string;
   phone: string;
@@ -189,6 +203,7 @@ export type Customer = {
   email: string | null;
   dateOfBirth: string | null;
   addresses: CustomerAddress[];
+  orders: EmbeddedOrder[];
   createdAt: Date;
   updatedAt: Date;
 };

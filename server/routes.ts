@@ -145,6 +145,26 @@ export async function registerRoutes(
     try {
       const input = api.orders.create.input.parse(req.body);
       const order = await storage.createOrderRequest(input);
+
+      // Calculate total from items
+      const total = (order.items as any[]).reduce((sum: number, item: any) => {
+        return sum + ((item.price ?? 0) * (item.quantity ?? 1));
+      }, 0);
+
+      // Push the order into the customer's document in the customers DB
+      await storage.pushOrderToCustomer(order.phone, {
+        orderId: order.id,
+        customerName: order.customerName,
+        phone: order.phone,
+        deliveryArea: order.deliveryArea,
+        address: order.address,
+        items: order.items,
+        status: order.status,
+        notes: order.notes ?? null,
+        total,
+        placedAt: order.createdAt,
+      });
+
       res.status(201).json(order);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -173,6 +193,8 @@ export async function registerRoutes(
       if (!order) {
         return res.status(404).json({ message: "Order not found" });
       }
+      // Sync status update into the customer's embedded order in the customers DB
+      await storage.updateCustomerOrderStatus(order.phone, order.id, input.status);
       res.json(order);
     } catch (err) {
       if (err instanceof z.ZodError) {
