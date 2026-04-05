@@ -1,12 +1,14 @@
 import { createContext, useContext, useState, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Customer } from "@shared/schema";
+import { OtpModal } from "@/components/storefront/OtpModal";
 
 interface CustomerContextValue {
   customer: Customer | null;
   isLoading: boolean;
   refetch: () => void;
   logout: () => Promise<void>;
+  openLoginModal: () => void;
 }
 
 const CustomerContext = createContext<CustomerContextValue>({
@@ -14,10 +16,12 @@ const CustomerContext = createContext<CustomerContextValue>({
   isLoading: true,
   refetch: () => {},
   logout: async () => {},
+  openLoginModal: () => {},
 });
 
 export function CustomerProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
 
   const { data: customer = null, isLoading, refetch } = useQuery<Customer | null>({
     queryKey: ["/api/customer/me"],
@@ -38,9 +42,14 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     queryClient.removeQueries({ queryKey: ["/api/customer/me/orders"] });
   }, [queryClient]);
 
+  const openLoginModal = useCallback(() => {
+    setLoginModalOpen(true);
+  }, []);
+
   return (
-    <CustomerContext.Provider value={{ customer, isLoading, refetch, logout }}>
+    <CustomerContext.Provider value={{ customer, isLoading, refetch, logout, openLoginModal }}>
       {children}
+      <OtpModal open={loginModalOpen} onClose={() => setLoginModalOpen(false)} />
     </CustomerContext.Provider>
   );
 }

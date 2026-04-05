@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, ReactNode } from "react";
 import type { Product } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { useCustomer } from "@/context/CustomerContext";
 
 export interface CartItem extends Omit<Product, 'id'> {
   id: number;
@@ -28,8 +29,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const { toast } = useToast();
+  const { customer, openLoginModal } = useCustomer();
 
   const addToCart = (product: Product | CartItem, quantity = 1) => {
+    if (!customer) {
+      openLoginModal();
+      return;
+    }
+
     setItems((current) => {
       const existing = current.find((i) => i.id === product.id);
       if (existing) {
