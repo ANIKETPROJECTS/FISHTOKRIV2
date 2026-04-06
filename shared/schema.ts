@@ -37,7 +37,7 @@ export type Product = {
   imageUrl: string | null;
   isArchived: boolean;
   updatedAt: Date;
-  sectionId: string | null;
+  sectionId: string | string[] | null;
   description: string | null;
   weight: string | null;
   pieces: string | null;
@@ -57,7 +57,7 @@ export type InsertProduct = {
   originalPrice?: number | null;
   unit?: string | null;
   imageUrl?: string | null;
-  sectionId?: string | null;
+  sectionId?: string | string[] | null;
   description?: string | null;
   weight?: string | null;
   pieces?: string | null;
@@ -121,7 +121,7 @@ export const insertProductSchema = z.object({
   originalPrice: z.number().nullable().optional(),
   unit: z.string().nullable().optional(),
   imageUrl: z.string().nullable().optional(),
-  sectionId: z.string().nullable().optional(),
+  sectionId: z.union([z.string(), z.array(z.string())]).nullable().optional(),
   description: z.string().nullable().optional(),
   weight: z.string().nullable().optional(),
   pieces: z.string().nullable().optional(),

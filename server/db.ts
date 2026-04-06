@@ -33,7 +33,7 @@ const productSchema = new mongoose.Schema({
   imageUrl: { type: String, default: null },
   isArchived: { type: Boolean, default: false },
   updatedAt: { type: Date, default: Date.now },
-  sectionId: { type: String, default: null },
+  sectionId: { type: mongoose.Schema.Types.Mixed, default: null },
   description: { type: String, default: null },
   weight: { type: String, default: null },
   pieces: { type: String, default: null },

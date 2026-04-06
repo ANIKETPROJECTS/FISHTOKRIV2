@@ -110,7 +110,11 @@ export default function Home() {
   }) || [];
 
   const getSectionProducts = (sectionId: string) => {
-    return products?.filter(p => !p.isArchived && p.sectionId === sectionId).slice(0, 10) || [];
+    return products?.filter(p => {
+      if (p.isArchived) return false;
+      if (Array.isArray(p.sectionId)) return p.sectionId.includes(sectionId);
+      return p.sectionId === sectionId;
+    }).slice(0, 10) || [];
   };
 
   if (view === "category") {
@@ -294,7 +298,7 @@ export default function Home() {
                   ? [1,2,3,4,5,6].map(i => <Skeleton key={i} className="min-w-[240px] sm:min-w-[280px] h-[340px] sm:h-[380px] rounded-3xl" />)
                   : sectionProducts.length > 0
                     ? sectionProducts.map(product => (
-                        <div key={product.id} className="min-w-[240px] sm:min-w-[280px] snap-start">
+                        <div key={product.id} className="w-[240px] sm:w-[280px] flex-none snap-start">
                           <ProductCard product={product} />
                         </div>
                       ))
