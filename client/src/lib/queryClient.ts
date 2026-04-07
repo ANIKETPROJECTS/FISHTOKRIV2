@@ -1,6 +1,17 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
-let activeHubDb: string | null = null;
+function readHubDbFromStorage(): string | null {
+  try {
+    const saved = localStorage.getItem("fishtokri_hub");
+    if (saved) {
+      const { subHub } = JSON.parse(saved);
+      return subHub?.dbName ?? null;
+    }
+  } catch {}
+  return null;
+}
+
+let activeHubDb: string | null = readHubDbFromStorage();
 
 export function setActiveHubDb(dbName: string | null) {
   activeHubDb = dbName;
