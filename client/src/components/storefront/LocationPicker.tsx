@@ -215,9 +215,10 @@ export function LocationPicker() {
 
   const handleSearchResultSelect = useCallback((feature: PhotonFeature) => {
     const title = photonTitle(feature);
-    setSearchQuery(title);
+    setSearchQuery("");
     setShowDropdown(false);
     setSearchResults([]);
+    setIsSearching(false);
     checkServiceability(feature.properties.postcode, title, feature);
   }, [checkServiceability]);
 
