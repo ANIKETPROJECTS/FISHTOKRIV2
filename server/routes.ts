@@ -148,7 +148,10 @@ export async function registerRoutes(
   app.get(api.products.list.path, async (req, res) => {
     const hub = await getReqHubModels(req);
     if (!hub) return res.json([]);
-    const docs = await hub.Product.find({ isArchived: { $ne: true } }).lean();
+    const docs = await hub.Product.find({
+      isArchived: { $ne: true },
+      quantity: { $ne: 0 },
+    }).lean();
     res.json(docs.map(toProduct));
   });
 
