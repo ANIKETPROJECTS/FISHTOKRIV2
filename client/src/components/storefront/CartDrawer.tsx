@@ -197,13 +197,14 @@ export function CartDrawer() {
     setGeoFilling(true);
     setGeoFillStatus("idle");
 
+    // Same geolocation options as the header location picker for consistent accuracy
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
         try {
-          // zoom=18 gives street-level precision; addressdetails=1 returns full hierarchy
+          // Same Nominatim URL as the header – no zoom/accept-language params which cause inconsistency
           const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&zoom=18&accept-language=en`,
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
             { headers: { "Accept-Language": "en" } }
           );
           const data = await res.json();
@@ -211,12 +212,11 @@ export function CartDrawer() {
 
           const pincode = addr.postcode?.replace(/\s/g, "") ?? "";
 
-          // Priority order for area: most-precise first
-          // quarter → suburb → neighbourhood → city_district → city → town → village
+          // Same priority chain the header uses for postcode, extended for area/street fields
           const area =
-            addr.quarter ||
             addr.suburb ||
             addr.neighbourhood ||
+            addr.quarter ||
             addr.city_district ||
             addr.residential ||
             addr.hamlet ||
@@ -225,7 +225,6 @@ export function CartDrawer() {
             addr.village ||
             "";
 
-          // Road + house number for street pre-fill
           const street = [addr.house_number, addr.road].filter(Boolean).join(", ") || addr.pedestrian || "";
 
           setAddForm(f => ({
@@ -255,7 +254,7 @@ export function CartDrawer() {
             : "Couldn't detect location. Please fill address manually."
         );
       },
-      { timeout: 15000, maximumAge: 0, enableHighAccuracy: true }
+      { timeout: 10000, maximumAge: 60000 }
     );
   }, []);
 
