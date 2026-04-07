@@ -40,21 +40,59 @@ const HubContext = createContext<HubContextValue>({
 
 const STORAGE_KEY = "fishtokri_hub";
 
+const DEFAULT_SUPER_HUB_NAME = "Mumbai";
+const DEFAULT_SUB_HUB_NAME = "Thane";
+
+async function fetchDefaultHub(): Promise<{ superHub: SuperHub; subHub: SubHub } | null> {
+  try {
+    const superRes = await fetch("/api/hubs/super");
+    if (!superRes.ok) return null;
+    const superHubs: SuperHub[] = await superRes.json();
+    const superHub = superHubs.find((h) => h.name === DEFAULT_SUPER_HUB_NAME) ?? superHubs[0];
+    if (!superHub) return null;
+
+    const subRes = await fetch(`/api/hubs/sub?superHubId=${superHub.id}`);
+    if (!subRes.ok) return null;
+    const subHubs: SubHub[] = await subRes.json();
+    const subHub = subHubs.find((h) => h.name === DEFAULT_SUB_HUB_NAME) ?? subHubs[0];
+    if (!subHub) return null;
+
+    return { superHub, subHub };
+  } catch {
+    return null;
+  }
+}
+
 export function HubProvider({ children }: { children: ReactNode }) {
   const [selectedSuperHub, setSelectedSuperHub] = useState<SuperHub | null>(null);
   const [selectedSubHub, setSelectedSubHub] = useState<SubHub | null>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const { superHub, subHub } = JSON.parse(saved);
+    const init = async () => {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const { superHub, subHub } = JSON.parse(saved);
+          setSelectedSuperHub(superHub);
+          setSelectedSubHub(subHub);
+          setActiveHubDb(subHub.dbName);
+          return;
+        }
+      } catch {}
+
+      const defaults = await fetchDefaultHub();
+      if (defaults) {
+        const { superHub, subHub } = defaults;
         setSelectedSuperHub(superHub);
         setSelectedSubHub(subHub);
         setActiveHubDb(subHub.dbName);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ superHub, subHub }));
+        queryClient.invalidateQueries();
       }
-    } catch {}
+    };
+
+    init();
   }, []);
 
   const setHub = useCallback((superHub: SuperHub, subHub: SubHub) => {

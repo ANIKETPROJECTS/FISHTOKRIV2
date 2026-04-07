@@ -6,6 +6,7 @@ import { z } from "zod";
 import passport from "passport";
 import { setupAuth } from "./auth";
 import { connectDB, SectionModel, ProductModel, ComboModel } from "./db";
+import { connectOrdersDb } from "./ordersDb";
 import { setImage, getImage, deleteImage } from "./imageStore";
 import { insertCarouselSlideSchema, insertCategorySchema, insertSectionSchema, insertComboSchema, insertCustomerAddressSchema, updateCustomerSchema } from "@shared/schema";
 import { SuperHubModel, SubHubModel } from "./adminDb";
@@ -26,6 +27,7 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   await connectDB();
+  await connectOrdersDb();
   setupAuth(app);
 
   const requireAuth = (req: any, res: any, next: any) => {

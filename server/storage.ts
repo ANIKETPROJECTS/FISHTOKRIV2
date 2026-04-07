@@ -1,4 +1,5 @@
-import { UserModel, ProductModel, OrderModel, CarouselModel, CategoryModel, SectionModel, ComboModel } from "./db";
+import { UserModel, ProductModel, CarouselModel, CategoryModel, SectionModel, ComboModel } from "./db";
+import { getOrderModel } from "./ordersDb";
 import { CustomerDbModel } from "./customerDb";
 import type {
   User,
@@ -291,18 +292,18 @@ export class MongoStorage implements IStorage {
   }
 
   async getOrderRequests(): Promise<OrderRequest[]> {
-    const docs = await OrderModel.find().sort({ createdAt: -1 }).lean();
+    const docs = await getOrderModel().find().sort({ createdAt: -1 }).lean();
     return docs.map(toOrder);
   }
 
   async getOrdersByPhone(phone: string): Promise<OrderRequest[]> {
-    const docs = await OrderModel.find({ phone }).sort({ createdAt: -1 }).lean();
+    const docs = await getOrderModel().find({ phone }).sort({ createdAt: -1 }).lean();
     return docs.map(toOrder);
   }
 
   async getOrderRequest(id: string): Promise<OrderRequest | undefined> {
     try {
-      const doc = await OrderModel.findById(id).lean();
+      const doc = await getOrderModel().findById(id).lean();
       return doc ? toOrder(doc) : undefined;
     } catch {
       return undefined;
@@ -310,7 +311,7 @@ export class MongoStorage implements IStorage {
   }
 
   async createOrderRequest(order: InsertOrderRequest): Promise<OrderRequest> {
-    const doc = await OrderModel.create({
+    const doc = await getOrderModel().create({
       ...order,
       status: "pending",
       createdAt: new Date(),
@@ -320,7 +321,7 @@ export class MongoStorage implements IStorage {
 
   async updateOrderRequestStatus(id: string, status: string): Promise<OrderRequest | undefined> {
     try {
-      const doc = await OrderModel.findByIdAndUpdate(id, { status }, { new: true }).lean();
+      const doc = await getOrderModel().findByIdAndUpdate(id, { status }, { new: true }).lean();
       return doc ? toOrder(doc) : undefined;
     } catch {
       return undefined;
