@@ -24,6 +24,25 @@ export type Recipe = {
   method: string[];
 };
 
+export type Coupon = {
+  id: string;
+  code: string;
+  title: string;
+  description: string;
+  type: "flat" | "percentage";
+  discountValue: number;
+  minOrderAmount: number;
+  maxUsage: number | null;
+  usedCount: number;
+  isFirstTimeOnly: boolean;
+  isActive: boolean;
+  applicableCategories: string[];
+  expiresAt: Date | null;
+  color: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 export type Product = {
   id: string;
   name: string;
@@ -44,6 +63,7 @@ export type Product = {
   serves: string | null;
   discountPct: number | null;
   quantity: number | null;
+  couponIds: string[];
   recipes: Recipe[];
 };
 

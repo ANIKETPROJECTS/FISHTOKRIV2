@@ -31,6 +31,7 @@ const productSchema = new mongoose.Schema({
   serves: { type: String, default: null },
   discountPct: { type: Number, default: null },
   quantity: { type: Number, default: null },
+  couponIds: { type: [mongoose.Schema.Types.ObjectId], default: [] },
   inventoryBatches: { type: [inventoryBatchSchema], default: [] },
   recipes: [{
     title: { type: String },
@@ -44,6 +45,24 @@ const productSchema = new mongoose.Schema({
     ingredients: [{ type: String }],
     method: [{ type: String }],
   }],
+});
+
+const couponSchema = new mongoose.Schema({
+  code: { type: String, required: true, unique: true, uppercase: true, trim: true },
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  type: { type: String, enum: ["flat", "percentage"], required: true },
+  discountValue: { type: Number, required: true },
+  minOrderAmount: { type: Number, default: 0 },
+  maxUsage: { type: Number, default: null },
+  usedCount: { type: Number, default: 0 },
+  isFirstTimeOnly: { type: Boolean, default: false },
+  isActive: { type: Boolean, default: true },
+  applicableCategories: { type: [String], default: [] },
+  expiresAt: { type: Date, default: null },
+  color: { type: String, default: "bg-blue-50 border-blue-200 text-blue-700" },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
 });
 
 const sectionSchema = new mongoose.Schema({
@@ -117,6 +136,7 @@ export interface HubModels {
   Category: mongoose.Model<any>;
   Combo: mongoose.Model<any>;
   Timeslot: mongoose.Model<any>;
+  Coupon: mongoose.Model<any>;
 }
 
 export async function getHubModels(dbName: string): Promise<HubModels> {
@@ -139,5 +159,6 @@ export async function getHubModels(dbName: string): Promise<HubModels> {
     Category: getModel("Category", categorySchema),
     Combo: getModel("Combo", comboSchema),
     Timeslot: getModel("Timeslot", timeslotSchema),
+    Coupon: getModel("Coupon", couponSchema),
   };
 }

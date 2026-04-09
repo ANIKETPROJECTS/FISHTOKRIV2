@@ -113,6 +113,7 @@ export async function registerRoutes(
     description: doc.description ?? null, weight: doc.weight ?? null,
     pieces: doc.pieces ?? null, serves: doc.serves ?? null,
     discountPct: doc.discountPct ?? null, quantity: doc.quantity ?? null,
+    couponIds: (doc.couponIds ?? []).map((id: any) => id.toString()),
     recipes: (doc.recipes ?? []).map((r: any) => ({
       title: r.title ?? "", description: r.description ?? "",
       image: r.image ?? "", totalTime: r.totalTime ?? "",
@@ -121,6 +122,16 @@ export async function registerRoutes(
       ingredients: (r.ingredients ?? []).map((i: any) => String(i)),
       method: (r.method ?? []).map((m: any) => String(m)),
     })),
+  });
+
+  const toCoupon = (doc: any) => ({
+    id: doc._id.toString(), code: doc.code, title: doc.title,
+    description: doc.description, type: doc.type, discountValue: doc.discountValue,
+    minOrderAmount: doc.minOrderAmount ?? 0, maxUsage: doc.maxUsage ?? null,
+    usedCount: doc.usedCount ?? 0, isFirstTimeOnly: doc.isFirstTimeOnly ?? false,
+    isActive: doc.isActive ?? true, applicableCategories: doc.applicableCategories ?? [],
+    expiresAt: doc.expiresAt ?? null, color: doc.color ?? "",
+    createdAt: doc.createdAt, updatedAt: doc.updatedAt,
   });
   const toSection = (doc: any) => ({
     id: doc._id.toString(), title: doc.title, type: doc.type ?? "products",
@@ -415,6 +426,85 @@ export async function registerRoutes(
         return res.status(400).json({ message: err.errors[0].message });
       }
       res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // ── Coupon routes ────────────────────────────────────────────────────────
+  app.get("/api/coupons", async (req, res) => {
+    const hub = await getReqHubModels(req);
+    if (!hub) return res.json([]);
+    const docs = await hub.Coupon.find({ isActive: true }).lean();
+    res.json(docs.map(toCoupon));
+  });
+
+  app.get("/api/coupons/product/:productId", async (req, res) => {
+    try {
+      const hub = await getReqHubModels(req);
+      if (!hub) return res.json([]);
+      const product = await hub.Product.findById(req.params.productId).lean() as any;
+      if (!product) return res.status(404).json({ message: "Product not found" });
+      const couponIds = (product.couponIds ?? []).map((id: any) => id.toString());
+      if (couponIds.length === 0) return res.json([]);
+      const docs = await hub.Coupon.find({ _id: { $in: couponIds }, isActive: true }).lean();
+      res.json(docs.map(toCoupon));
+    } catch (err) {
+      res.status(500).json({ message: "Failed to fetch product coupons" });
+    }
+  });
+
+  app.post("/api/coupons", requireAuth, async (req, res) => {
+    try {
+      const hub = await getReqHubModels(req);
+      if (!hub) return res.status(400).json({ message: "No hub selected" });
+      const doc = await hub.Coupon.create({ ...req.body, createdAt: new Date(), updatedAt: new Date() });
+      res.status(201).json(toCoupon(doc));
+    } catch (err: any) {
+      res.status(400).json({ message: err.message || "Failed to create coupon" });
+    }
+  });
+
+  app.patch("/api/coupons/:id", requireAuth, async (req, res) => {
+    try {
+      const hub = await getReqHubModels(req);
+      if (!hub) return res.status(400).json({ message: "No hub selected" });
+      const doc = await hub.Coupon.findByIdAndUpdate(
+        req.params.id,
+        { ...req.body, updatedAt: new Date() },
+        { new: true }
+      ).lean();
+      if (!doc) return res.status(404).json({ message: "Coupon not found" });
+      res.json(toCoupon(doc));
+    } catch (err: any) {
+      res.status(400).json({ message: err.message || "Failed to update coupon" });
+    }
+  });
+
+  app.delete("/api/coupons/:id", requireAuth, async (req, res) => {
+    try {
+      const hub = await getReqHubModels(req);
+      if (!hub) return res.status(400).json({ message: "No hub selected" });
+      await hub.Coupon.findByIdAndDelete(req.params.id);
+      res.status(204).send();
+    } catch (err) {
+      res.status(500).json({ message: "Failed to delete coupon" });
+    }
+  });
+
+  // Assign coupons to a product
+  app.patch("/api/products/:id/coupons", requireAuth, async (req, res) => {
+    try {
+      const hub = await getReqHubModels(req);
+      if (!hub) return res.status(400).json({ message: "No hub selected" });
+      const { couponIds } = req.body as { couponIds: string[] };
+      const doc = await hub.Product.findByIdAndUpdate(
+        req.params.id,
+        { couponIds, updatedAt: new Date() },
+        { new: true }
+      ).lean();
+      if (!doc) return res.status(404).json({ message: "Product not found" });
+      res.json(toProduct(doc));
+    } catch (err) {
+      res.status(500).json({ message: "Failed to update product coupons" });
     }
   });
 

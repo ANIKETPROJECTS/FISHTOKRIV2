@@ -1,5 +1,6 @@
 import { useRoute, useLocation } from "wouter";
 import { useProducts } from "@/hooks/use-products";
+import { useProductCoupons } from "@/hooks/use-coupons";
 import { useCart } from "@/context/CartContext";
 import { Header } from "@/components/storefront/Header";
 import { CartDrawer } from "@/components/storefront/CartDrawer";
@@ -35,7 +36,7 @@ function getFallbackImage(category: string) {
   }
 }
 
-function CouponCard({ code, desc }: { code: string; desc: string; color: string }) {
+function CouponCard({ code, description }: { code: string; description: string; color?: string }) {
   const [copied, setCopied] = useState(false);
   const copy = () => {
     navigator.clipboard.writeText(code);
@@ -50,7 +51,7 @@ function CouponCard({ code, desc }: { code: string; desc: string; color: string 
         </div>
         <div className="min-w-0">
           <span className="font-mono font-bold text-sm text-foreground tracking-widest border border-dashed border-border/60 rounded px-1.5 py-0.5 bg-muted/40">{code}</span>
-          <p className="text-xs text-muted-foreground mt-0.5 truncate">{desc}</p>
+          <p className="text-xs text-muted-foreground mt-0.5 truncate">{description}</p>
         </div>
       </div>
       <button
@@ -110,6 +111,8 @@ export default function ProductDetail() {
   const productId = params?.id;
   const product = products?.find((p) => p.id === productId);
   const isUnavailable = product?.status === "unavailable";
+
+  const { coupons: liveCoupons } = useProductCoupons(productId, product?.couponIds ?? []);
 
   const dummy = product ? getDummyDetail(product.category) : null;
   const hasDiscount = product?.originalPrice != null && product?.price != null && product.originalPrice > product.price;
@@ -255,18 +258,20 @@ export default function ProductDetail() {
               </Button>
             </div>
 
-            {/* Available Offers — moved below Add to Cart, compact & professional */}
-            <div className="border border-border/40 rounded-2xl overflow-hidden">
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-border/30 bg-muted/20">
-                <Tag className="w-3.5 h-3.5 text-muted-foreground" />
-                <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Available Offers</h3>
+            {/* Available Offers */}
+            {liveCoupons.length > 0 && (
+              <div className="border border-border/40 rounded-2xl overflow-hidden">
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-border/30 bg-muted/20">
+                  <Tag className="w-3.5 h-3.5 text-muted-foreground" />
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Available Offers</h3>
+                </div>
+                <div className="flex flex-col divide-y divide-border/30">
+                  {liveCoupons.map((c) => (
+                    <CouponCard key={c.id} code={c.code} description={c.description} color={c.color} />
+                  ))}
+                </div>
               </div>
-              <div className="flex flex-col divide-y divide-border/30">
-                {dummy.coupons.map((c) => (
-                  <CouponCard key={c.code} {...c} />
-                ))}
-              </div>
-            </div>
+            )}
           </div>
         </div>
 
