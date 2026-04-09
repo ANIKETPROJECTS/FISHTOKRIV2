@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useForm, useFieldArray, Control } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Edit2, Trash2, CheckCircle2, MoreVertical, PlusCircle, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Edit2, Trash2, CheckCircle2, MoreVertical, PlusCircle, X, ChevronDown, ChevronUp, Layers } from "lucide-react";
 import { insertProductSchema } from "@shared/schema";
 import type { InsertProduct, Product, Section } from "@shared/schema";
-import { useProducts, useCreateProduct, useUpdateProduct, useBulkUpdateStatus, useDeleteProduct } from "@/hooks/use-products";
+import { useProducts, useCreateProduct, useUpdateProduct, useBulkUpdateStatus, useDeleteProduct, useInventoryBatches, useAddInventoryBatch, useDeleteInventoryBatch } from "@/hooks/use-products";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ export default function Products() {
   const { data: products } = useProducts();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [inventoryProduct, setInventoryProduct] = useState<Product | null>(null);
 
   const activeProducts = products?.filter(p => !p.isArchived) || [];
 
@@ -85,6 +86,9 @@ export default function Products() {
                         <DropdownMenuItem onClick={() => setEditingProduct(p)}>
                           <Edit2 className="w-4 h-4 mr-2" /> Edit
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setInventoryProduct(p)}>
+                          <Layers className="w-4 h-4 mr-2" /> Inventory
+                        </DropdownMenuItem>
                         <DeleteAction id={p.id} />
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -108,6 +112,13 @@ export default function Products() {
           open={!!editingProduct}
           onOpenChange={(v) => !v && setEditingProduct(null)}
           product={editingProduct}
+        />
+      )}
+      {inventoryProduct && (
+        <InventoryDialog
+          product={inventoryProduct}
+          open={!!inventoryProduct}
+          onOpenChange={(v) => !v && setInventoryProduct(null)}
         />
       )}
     </div>
@@ -509,6 +520,151 @@ function BulkUpdateDialog() {
           <Button className="w-full" disabled={isPending} onClick={() => mutate({ category, status }, { onSuccess: () => setOpen(false) })}>
             Apply to all {category}
           </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function InventoryDialog({ product, open, onOpenChange }: { product: Product; open: boolean; onOpenChange: (v: boolean) => void }) {
+  const { data: batches = [], isLoading } = useInventoryBatches(product.id);
+  const { mutate: addBatch, isPending: isAdding } = useAddInventoryBatch(product.id);
+  const { mutate: deleteBatch, isPending: isDeleting } = useDeleteInventoryBatch(product.id);
+
+  const [qty, setQty] = useState("");
+  const [shelfLife, setShelfLife] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const handleAdd = () => {
+    const quantity = parseFloat(qty);
+    const shelfLifeDays = parseFloat(shelfLife);
+    if (!qty || isNaN(quantity) || quantity < 1) {
+      setError("Please enter a valid quantity (min 1).");
+      return;
+    }
+    if (!shelfLife || isNaN(shelfLifeDays) || shelfLifeDays < 0.5) {
+      setError("Please enter a valid shelf life (min 0.5 days).");
+      return;
+    }
+    setError(null);
+    addBatch({ quantity, shelfLifeDays }, {
+      onSuccess: () => {
+        setQty("");
+        setShelfLife("");
+      },
+      onError: (e: any) => setError(e.message),
+    });
+  };
+
+  const totalQty = batches.reduce((sum, b) => sum + b.quantity, 0);
+
+  const formatDate = (date: Date | string) => {
+    const d = new Date(date);
+    return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  };
+
+  const getExpiryDate = (entryDate: Date | string, shelfLifeDays: number) => {
+    const d = new Date(entryDate);
+    d.setTime(d.getTime() + shelfLifeDays * 24 * 60 * 60 * 1000);
+    return d;
+  };
+
+  const isExpired = (entryDate: Date | string, shelfLifeDays: number) => {
+    return getExpiryDate(entryDate, shelfLifeDays) < new Date();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Layers className="w-5 h-5 text-primary" />
+            Inventory — {product.name}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-5">
+          <div className="bg-muted/40 rounded-xl p-4 space-y-1">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Total Stock</p>
+            <p className="text-2xl font-bold">{totalQty} <span className="text-sm font-normal text-muted-foreground">units across {batches.length} batch{batches.length !== 1 ? "es" : ""}</span></p>
+            <p className="text-xs text-muted-foreground">Batches are sold oldest-first (FIFO) when orders are placed.</p>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-sm font-semibold">Add New Batch</p>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Input
+                  type="number"
+                  min="1"
+                  placeholder="Quantity"
+                  value={qty}
+                  onChange={e => setQty(e.target.value)}
+                  data-testid="input-batch-quantity"
+                />
+              </div>
+              <div className="flex-1">
+                <Input
+                  type="number"
+                  min="0.5"
+                  step="0.5"
+                  placeholder="Shelf life (days)"
+                  value={shelfLife}
+                  onChange={e => setShelfLife(e.target.value)}
+                  data-testid="input-batch-shelflife"
+                />
+              </div>
+              <Button onClick={handleAdd} disabled={isAdding} data-testid="button-add-batch">
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+            {error && <p className="text-xs text-destructive">{error}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-sm font-semibold">Current Batches <span className="text-xs font-normal text-muted-foreground">(oldest first)</span></p>
+            {isLoading && <p className="text-sm text-muted-foreground">Loading...</p>}
+            {!isLoading && batches.length === 0 && (
+              <p className="text-sm text-muted-foreground py-2">No inventory batches yet. Add one above.</p>
+            )}
+            <div className="space-y-2">
+              {batches.map((batch, index) => {
+                const expired = isExpired(batch.entryDate, batch.shelfLifeDays);
+                const expiryDate = getExpiryDate(batch.entryDate, batch.shelfLifeDays);
+                return (
+                  <div
+                    key={batch.id}
+                    data-testid={`card-batch-${batch.id}`}
+                    className={`flex items-center justify-between rounded-lg border px-4 py-3 ${expired ? "border-red-200 bg-red-50" : index === 0 ? "border-amber-200 bg-amber-50" : "bg-card"}`}
+                  >
+                    <div className="space-y-0.5 flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">{batch.quantity} units</span>
+                        {index === 0 && <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700 border-amber-200">Next to sell</Badge>}
+                        {expired && <Badge variant="secondary" className="text-xs bg-red-100 text-red-700 border-red-200">Expired</Badge>}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Added: {formatDate(batch.entryDate)} &bull; Shelf life: {batch.shelfLifeDays}d
+                      </p>
+                      <p className={`text-xs ${expired ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
+                        {expired ? "Expired" : "Expires"}: {formatDate(expiryDate)}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0 text-muted-foreground hover:text-destructive"
+                      disabled={isDeleting}
+                      onClick={() => deleteBatch(batch.id)}
+                      data-testid={`button-delete-batch-${batch.id}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

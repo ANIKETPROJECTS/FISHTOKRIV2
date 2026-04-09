@@ -109,7 +109,20 @@ export type InsertOrderRequest = {
   address: string;
   items: OrderItem[];
   notes?: string | null;
+  hubDbName?: string | null;
 };
+
+export type InventoryBatch = {
+  id: string;
+  quantity: number;
+  shelfLifeDays: number;
+  entryDate: Date;
+};
+
+export const insertInventoryBatchSchema = z.object({
+  quantity: z.number().min(1, "Quantity must be at least 1"),
+  shelfLifeDays: z.number().min(0.5, "Shelf life must be at least 0.5 days"),
+});
 
 export const insertProductSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -160,6 +173,7 @@ export const insertOrderRequestSchema = z.object({
     price: z.number().nullable(),
   })).min(1, "At least one item is required"),
   notes: z.string().nullable().optional(),
+  hubDbName: z.string().nullable().optional(),
 });
 
 export const insertUserSchema = z.object({

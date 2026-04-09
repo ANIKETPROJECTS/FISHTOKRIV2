@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
 import type { OrderRequest, InsertOrderRequest } from "@shared/schema";
+import { getActiveHubDb } from "@/lib/queryClient";
 
 export function useOrders() {
   return useQuery({
@@ -18,10 +19,11 @@ export function useCreateOrder() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: InsertOrderRequest) => {
+      const hubDbName = getActiveHubDb();
       const res = await fetch(api.orders.create.path, {
         method: api.orders.create.method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, hubDbName }),
       });
       if (!res.ok) {
         const error = await res.json();

@@ -7,7 +7,7 @@ import passport from "passport";
 import { setupAuth } from "./auth";
 import { connectOrdersDb } from "./ordersDb";
 import { setImage, getImage, deleteImage } from "./imageStore";
-import { insertCarouselSlideSchema, insertCategorySchema, insertSectionSchema, insertComboSchema, insertCustomerAddressSchema, updateCustomerSchema } from "@shared/schema";
+import { insertCarouselSlideSchema, insertCategorySchema, insertSectionSchema, insertComboSchema, insertCustomerAddressSchema, updateCustomerSchema, insertInventoryBatchSchema } from "@shared/schema";
 import { SuperHubModel, SubHubModel } from "./adminDb";
 import { getHubModels } from "./hubConnections";
 
@@ -242,10 +242,119 @@ export async function registerRoutes(
     res.send(img.data);
   });
 
+  // Inventory batch routes
+  const toBatch = (b: any) => ({
+    id: b._id.toString(),
+    quantity: b.quantity,
+    shelfLifeDays: b.shelfLifeDays,
+    entryDate: b.entryDate,
+  });
+
+  app.get("/api/products/:id/batches", requireAuth, async (req, res) => {
+    const hub = await getReqHubModels(req);
+    if (!hub) return res.status(400).json({ message: "No hub selected" });
+    const doc = await hub.Product.findById(req.params.id).lean() as any;
+    if (!doc) return res.status(404).json({ message: "Product not found" });
+    const batches = ((doc.inventoryBatches ?? []) as any[])
+      .sort((a: any, b: any) => new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime());
+    res.json(batches.map(toBatch));
+  });
+
+  app.post("/api/products/:id/batches", requireAuth, async (req, res) => {
+    try {
+      const hub = await getReqHubModels(req);
+      if (!hub) return res.status(400).json({ message: "No hub selected" });
+      const input = insertInventoryBatchSchema.parse(req.body);
+      const doc = await hub.Product.findById(req.params.id).lean() as any;
+      if (!doc) return res.status(404).json({ message: "Product not found" });
+      const newBatch = { quantity: input.quantity, shelfLifeDays: input.shelfLifeDays, entryDate: new Date() };
+      const updatedDoc = await hub.Product.findByIdAndUpdate(
+        req.params.id,
+        {
+          $push: { inventoryBatches: newBatch },
+          $inc: { quantity: input.quantity },
+          updatedAt: new Date(),
+        },
+        { new: true }
+      ).lean() as any;
+      const addedBatch = updatedDoc.inventoryBatches[updatedDoc.inventoryBatches.length - 1];
+      res.status(201).json(toBatch(addedBatch));
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });
+      }
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/products/:id/batches/:batchId", requireAuth, async (req, res) => {
+    try {
+      const hub = await getReqHubModels(req);
+      if (!hub) return res.status(400).json({ message: "No hub selected" });
+      const doc = await hub.Product.findById(req.params.id).lean() as any;
+      if (!doc) return res.status(404).json({ message: "Product not found" });
+      const batch = (doc.inventoryBatches ?? []).find((b: any) => b._id.toString() === req.params.batchId) as any;
+      if (!batch) return res.status(404).json({ message: "Batch not found" });
+      await hub.Product.findByIdAndUpdate(
+        req.params.id,
+        {
+          $pull: { inventoryBatches: { _id: batch._id } },
+          $inc: { quantity: -batch.quantity },
+          updatedAt: new Date(),
+        }
+      );
+      res.status(204).end();
+    } catch (err) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Orders routes
   app.post(api.orders.create.path, async (req, res) => {
     try {
       const input = api.orders.create.input.parse(req.body);
+
+      // FIFO inventory deduction if hubDbName is provided
+      if (input.hubDbName) {
+        try {
+          const hub = await getHubModels(input.hubDbName);
+          for (const item of input.items) {
+            const product = await hub.Product.findById(item.productId).lean() as any;
+            if (!product || !product.inventoryBatches || product.inventoryBatches.length === 0) continue;
+
+            // Sort batches by entryDate ascending (oldest first = FIFO)
+            const sortedBatches = [...product.inventoryBatches].sort(
+              (a: any, b: any) => new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime()
+            );
+
+            let remaining = item.quantity;
+            for (const batch of sortedBatches) {
+              if (remaining <= 0) break;
+              const deduct = Math.min(batch.quantity, remaining);
+              remaining -= deduct;
+              if (deduct >= batch.quantity) {
+                // Remove this batch entirely
+                await hub.Product.findByIdAndUpdate(item.productId, {
+                  $pull: { inventoryBatches: { _id: batch._id } },
+                });
+              } else {
+                // Partially deduct from this batch
+                await hub.Product.findOneAndUpdate(
+                  { _id: item.productId, "inventoryBatches._id": batch._id },
+                  { $inc: { "inventoryBatches.$.quantity": -deduct } }
+                );
+              }
+            }
+            // Recalculate total quantity from remaining batches
+            const updated = await hub.Product.findById(item.productId).lean() as any;
+            const totalQty = (updated.inventoryBatches ?? []).reduce((sum: number, b: any) => sum + b.quantity, 0);
+            await hub.Product.findByIdAndUpdate(item.productId, { quantity: totalQty, updatedAt: new Date() });
+          }
+        } catch (deductErr) {
+          console.error("FIFO deduction error:", deductErr);
+        }
+      }
+
       const order = await storage.createOrderRequest(input);
 
       const total = (order.items as any[]).reduce((sum: number, item: any) => {

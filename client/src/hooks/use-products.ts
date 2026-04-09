@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
-import type { Product, InsertProduct, UpdateProductRequest } from "@shared/schema";
+import type { Product, InsertProduct, UpdateProductRequest, InventoryBatch } from "@shared/schema";
 import { getHubHeaders } from "@/lib/queryClient";
 
 export function useProducts() {
@@ -84,5 +84,61 @@ export function useDeleteProduct() {
       if (!res.ok) throw new Error("Failed to delete");
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.products.list.path] }),
+  });
+}
+
+export function useInventoryBatches(productId: string | null) {
+  return useQuery<InventoryBatch[]>({
+    queryKey: ["/api/products", productId, "batches"],
+    enabled: !!productId,
+    queryFn: async () => {
+      const res = await fetch(`/api/products/${productId}/batches`, {
+        headers: getHubHeaders(),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to fetch batches");
+      return res.json();
+    },
+  });
+}
+
+export function useAddInventoryBatch(productId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { quantity: number; shelfLifeDays: number }) => {
+      const res = await fetch(`/api/products/${productId}/batches`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getHubHeaders() },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to add batch");
+      }
+      return res.json() as Promise<InventoryBatch>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products", productId, "batches"] });
+      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
+    },
+  });
+}
+
+export function useDeleteInventoryBatch(productId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (batchId: string) => {
+      const res = await fetch(`/api/products/${productId}/batches/${batchId}`, {
+        method: "DELETE",
+        headers: getHubHeaders(),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to delete batch");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products", productId, "batches"] });
+      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
+    },
   });
 }

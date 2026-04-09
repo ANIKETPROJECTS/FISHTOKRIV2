@@ -4,6 +4,12 @@ const MONGODB_URI = process.env.MONGODB_URI!;
 
 const connectionCache = new Map<string, mongoose.Connection>();
 
+const inventoryBatchSchema = new mongoose.Schema({
+  quantity: { type: Number, required: true },
+  shelfLifeDays: { type: Number, required: true },
+  entryDate: { type: Date, default: Date.now },
+});
+
 const productSchema = new mongoose.Schema({
   name: { type: String, required: true },
   category: { type: String, required: true },
@@ -23,6 +29,7 @@ const productSchema = new mongoose.Schema({
   serves: { type: String, default: null },
   discountPct: { type: Number, default: null },
   quantity: { type: Number, default: null },
+  inventoryBatches: { type: [inventoryBatchSchema], default: [] },
   recipes: [{
     title: { type: String },
     description: { type: String },
