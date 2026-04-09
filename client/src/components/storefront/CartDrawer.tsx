@@ -115,6 +115,8 @@ export function CartDrawer() {
   const [couponInput, setCouponInput] = useState("");
   const [couponError, setCouponError] = useState("");
   const [showAllCoupons, setShowAllCoupons] = useState(false);
+  const [couponExpanded, setCouponExpanded] = useState(false);
+  const [timeslotExpanded, setTimeslotExpanded] = useState(false);
 
   const { data: allCoupons = [] } = useCoupons();
 
@@ -511,112 +513,140 @@ export function CartDrawer() {
                       ))}
                     </div>
 
-                    {/* Coupon Section */}
+                    {/* Coupon Section — collapsible */}
                     {cartCoupons.length > 0 && (
                       <div className="mx-4 mt-4 border border-border/40 rounded-2xl overflow-hidden">
-                        <div className="flex items-center gap-2 px-4 py-3 bg-muted/20 border-b border-border/30">
-                          <Ticket className="w-4 h-4 text-primary" />
-                          <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex-1">Available Coupons</h3>
-                          {cartCoupons.length > 3 && (
-                            <button
-                              onClick={() => setShowAllCoupons(s => !s)}
-                              className="text-xs text-primary font-semibold flex items-center gap-0.5"
-                            >
-                              {showAllCoupons ? <><ChevronUp className="w-3 h-3" /> Less</> : <><ChevronDown className="w-3 h-3" /> More</>}
-                            </button>
-                          )}
-                        </div>
-
-                        {/* Applied coupon banner */}
-                        {appliedCoupon && (
-                          <div className="flex items-center justify-between px-4 py-2.5 bg-emerald-50 border-b border-emerald-100">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                              <div>
-                                <span className="font-mono font-bold text-sm text-emerald-700 tracking-wider">{appliedCoupon.code}</span>
-                                <p className="text-xs text-emerald-600">
-                                  {appliedCoupon.type === "flat" ? `₹${discountAmount} off applied!` : `${appliedCoupon.discountValue}% off — you save ₹${discountAmount}!`}
-                                </p>
-                              </div>
-                            </div>
-                            <button onClick={removeCoupon} className="text-xs text-red-500 font-semibold hover:text-red-700 flex items-center gap-1">
-                              <X className="w-3 h-3" /> Remove
-                            </button>
-                          </div>
-                        )}
-
-                        {/* Manual code entry */}
-                        {!appliedCoupon && (
-                          <div className="px-4 py-3 border-b border-border/20">
-                            <div className="flex gap-2">
-                              <input
-                                type="text"
-                                value={couponInput}
-                                onChange={e => { setCouponInput(e.target.value.toUpperCase()); setCouponError(""); }}
-                                onKeyDown={e => e.key === "Enter" && applyFromInput()}
-                                placeholder="Enter coupon code"
-                                className="flex-1 h-9 px-3 text-sm font-mono font-semibold tracking-wider rounded-lg border border-border/60 bg-muted/30 focus:outline-none focus:border-primary/60 placeholder:font-normal placeholder:tracking-normal"
-                                data-testid="input-coupon-code"
-                              />
-                              <button
-                                onClick={applyFromInput}
-                                disabled={!couponInput.trim()}
-                                className="px-4 h-9 rounded-lg bg-primary text-white text-xs font-bold disabled:opacity-40 hover:bg-primary/90 transition-colors"
-                                data-testid="button-apply-coupon"
-                              >
-                                Apply
-                              </button>
-                            </div>
-                            {couponError && (
-                              <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
-                                <AlertCircle className="w-3 h-3 shrink-0" /> {couponError}
-                              </p>
+                        {/* Header — always visible, tap to expand/collapse */}
+                        <button
+                          type="button"
+                          onClick={() => setCouponExpanded(s => !s)}
+                          className="w-full flex items-center gap-2.5 px-4 py-3 bg-muted/20 hover:bg-muted/30 transition-colors"
+                          data-testid="button-toggle-coupons"
+                        >
+                          <Ticket className="w-4 h-4 text-primary shrink-0" />
+                          <div className="flex-1 text-left min-w-0">
+                            {appliedCoupon ? (
+                              <span className="text-sm font-semibold text-emerald-700 flex items-center gap-1.5">
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span className="font-mono tracking-wider">{appliedCoupon.code}</span>
+                                <span className="font-normal text-emerald-600">· saved ₹{discountAmount}</span>
+                              </span>
+                            ) : (
+                              <span className="text-sm font-semibold text-primary">
+                                {cartCoupons.filter(isCouponApplicable).length > 0
+                                  ? `${cartCoupons.filter(isCouponApplicable).length} offer${cartCoupons.filter(isCouponApplicable).length > 1 ? "s" : ""} available`
+                                  : `${cartCoupons.length} coupon${cartCoupons.length > 1 ? "s" : ""}`}
+                              </span>
                             )}
                           </div>
-                        )}
+                          {couponExpanded
+                            ? <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" />
+                            : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />}
+                        </button>
 
-                        {/* Coupon list */}
-                        <div className="divide-y divide-border/20">
-                          {(showAllCoupons ? cartCoupons : cartCoupons.slice(0, 3)).map(coupon => {
-                            const applicable = isCouponApplicable(coupon);
-                            const isApplied = appliedCoupon?.id === coupon.id;
-                            const needed = applicable ? 0 : coupon.minOrderAmount - totalPrice;
-                            return (
-                              <div
-                                key={coupon.id}
-                                className={`flex items-center justify-between px-4 py-3 transition-colors ${applicable ? "bg-background hover:bg-muted/10" : "bg-muted/5 opacity-60"}`}
-                              >
-                                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                  <div className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${applicable ? "bg-primary/10" : "bg-muted"}`}>
-                                    <Tag className={`w-3.5 h-3.5 ${applicable ? "text-primary" : "text-muted-foreground"}`} />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <span className={`font-mono font-bold text-sm tracking-wider border border-dashed rounded px-1.5 py-0.5 ${applicable ? "border-primary/40 text-primary bg-primary/5" : "border-border/60 text-muted-foreground bg-muted/40"}`}>
-                                      {coupon.code}
-                                    </span>
-                                    <p className="text-xs text-muted-foreground mt-0.5 truncate">{coupon.description}</p>
-                                    {!applicable && coupon.minOrderAmount > 0 && (
-                                      <p className="text-[10px] text-amber-600 mt-0.5 font-medium">Add ₹{needed} more to unlock</p>
-                                    )}
+                        {/* Expanded body */}
+                        {couponExpanded && (
+                          <>
+                            {/* Applied coupon banner */}
+                            {appliedCoupon && (
+                              <div className="flex items-center justify-between px-4 py-2.5 bg-emerald-50 border-t border-emerald-100">
+                                <div className="flex items-center gap-2">
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                                  <div>
+                                    <span className="font-mono font-bold text-sm text-emerald-700 tracking-wider">{appliedCoupon.code}</span>
+                                    <p className="text-xs text-emerald-600">
+                                      {appliedCoupon.type === "flat" ? `₹${discountAmount} off applied!` : `${appliedCoupon.discountValue}% off — you save ₹${discountAmount}!`}
+                                    </p>
                                   </div>
                                 </div>
-                                <button
-                                  onClick={() => applicable && !isApplied && applyCartCoupon(coupon)}
-                                  disabled={!applicable || isApplied}
-                                  className={`ml-3 shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${
-                                    isApplied
-                                      ? "bg-emerald-100 text-emerald-700 cursor-default"
-                                      : applicable
-                                        ? "bg-primary/10 text-primary hover:bg-primary hover:text-white"
-                                        : "bg-muted text-muted-foreground cursor-not-allowed"
-                                  }`}
-                                >
-                                  {isApplied ? "✓ Applied" : applicable ? "Apply" : "Locked"}
+                                <button onClick={removeCoupon} className="text-xs text-red-500 font-semibold hover:text-red-700 flex items-center gap-1">
+                                  <X className="w-3 h-3" /> Remove
                                 </button>
                               </div>
-                            );
-                          })}
-                        </div>
+                            )}
+
+                            {/* Manual code entry */}
+                            {!appliedCoupon && (
+                              <div className="px-4 py-3 border-t border-border/20">
+                                <div className="flex gap-2">
+                                  <input
+                                    type="text"
+                                    value={couponInput}
+                                    onChange={e => { setCouponInput(e.target.value.toUpperCase()); setCouponError(""); }}
+                                    onKeyDown={e => e.key === "Enter" && applyFromInput()}
+                                    placeholder="Enter coupon code"
+                                    className="flex-1 h-9 px-3 text-sm font-mono font-semibold tracking-wider rounded-lg border border-border/60 bg-muted/30 focus:outline-none focus:border-primary/60 placeholder:font-normal placeholder:tracking-normal"
+                                    data-testid="input-coupon-code"
+                                  />
+                                  <button
+                                    onClick={applyFromInput}
+                                    disabled={!couponInput.trim()}
+                                    className="px-4 h-9 rounded-lg bg-primary text-white text-xs font-bold disabled:opacity-40 hover:bg-primary/90 transition-colors"
+                                    data-testid="button-apply-coupon"
+                                  >
+                                    Apply
+                                  </button>
+                                </div>
+                                {couponError && (
+                                  <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3 shrink-0" /> {couponError}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Coupon list */}
+                            <div className="divide-y divide-border/20 border-t border-border/20">
+                              {(showAllCoupons ? cartCoupons : cartCoupons.slice(0, 3)).map(coupon => {
+                                const applicable = isCouponApplicable(coupon);
+                                const isApplied = appliedCoupon?.id === coupon.id;
+                                const needed = applicable ? 0 : coupon.minOrderAmount - totalPrice;
+                                return (
+                                  <div
+                                    key={coupon.id}
+                                    className={`flex items-center justify-between px-4 py-3 transition-colors ${applicable ? "bg-background hover:bg-muted/10" : "bg-muted/5 opacity-60"}`}
+                                  >
+                                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                      <div className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${applicable ? "bg-primary/10" : "bg-muted"}`}>
+                                        <Tag className={`w-3.5 h-3.5 ${applicable ? "text-primary" : "text-muted-foreground"}`} />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <span className={`font-mono font-bold text-sm tracking-wider border border-dashed rounded px-1.5 py-0.5 ${applicable ? "border-primary/40 text-primary bg-primary/5" : "border-border/60 text-muted-foreground bg-muted/40"}`}>
+                                          {coupon.code}
+                                        </span>
+                                        <p className="text-xs text-muted-foreground mt-0.5 truncate">{coupon.description}</p>
+                                        {!applicable && coupon.minOrderAmount > 0 && (
+                                          <p className="text-[10px] text-amber-600 mt-0.5 font-medium">Add ₹{needed} more to unlock</p>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <button
+                                      onClick={() => { if (applicable && !isApplied) { applyCartCoupon(coupon); setCouponExpanded(false); } }}
+                                      disabled={!applicable || isApplied}
+                                      className={`ml-3 shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${
+                                        isApplied
+                                          ? "bg-emerald-100 text-emerald-700 cursor-default"
+                                          : applicable
+                                            ? "bg-primary/10 text-primary hover:bg-primary hover:text-white"
+                                            : "bg-muted text-muted-foreground cursor-not-allowed"
+                                      }`}
+                                    >
+                                      {isApplied ? "✓ Applied" : applicable ? "Apply" : "Locked"}
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                              {cartCoupons.length > 3 && (
+                                <button
+                                  onClick={() => setShowAllCoupons(s => !s)}
+                                  className="w-full py-2.5 text-xs text-primary font-semibold flex items-center justify-center gap-1 hover:bg-muted/10"
+                                >
+                                  {showAllCoupons ? <><ChevronUp className="w-3 h-3" /> Show less</> : <><ChevronDown className="w-3 h-3" /> +{cartCoupons.length - 3} more coupons</>}
+                                </button>
+                              )}
+                            </div>
+                          </>
+                        )}
                       </div>
                     )}
 
@@ -727,54 +757,84 @@ export function CartDrawer() {
                       )}
                     </div>
 
-                    {/* Delivery Time Slot */}
-                    <div className="px-4 mt-5 mb-2">
-                      <h3 className="font-semibold text-foreground text-sm flex items-center gap-1.5 mb-3">
-                        <Clock className="w-4 h-4 text-primary" /> Delivery Time Slot
-                      </h3>
-                      {timeslotsLoading ? (
-                        <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
-                          <Loader2 className="w-4 h-4 animate-spin" /> Loading slots...
+                    {/* Delivery Time Slot — collapsible */}
+                    <div className="mx-4 mt-4 border border-border/40 rounded-2xl overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setTimeslotExpanded(s => !s)}
+                        className="w-full flex items-center gap-2.5 px-4 py-3 bg-muted/20 hover:bg-muted/30 transition-colors"
+                        data-testid="button-toggle-timeslot"
+                      >
+                        {selectedTimeslot?.isInstant
+                          ? <Zap className="w-4 h-4 text-amber-500 shrink-0" />
+                          : <Clock className="w-4 h-4 text-primary shrink-0" />}
+                        <div className="flex-1 text-left min-w-0">
+                          {selectedTimeslot ? (
+                            <span className={`text-sm font-semibold ${selectedTimeslot.isInstant ? "text-amber-700" : "text-foreground"}`}>
+                              {selectedTimeslot.label}
+                              {selectedTimeslot.startTime && selectedTimeslot.endTime && (
+                                <span className="font-normal text-muted-foreground"> · {selectedTimeslot.startTime}–{selectedTimeslot.endTime}</span>
+                              )}
+                            </span>
+                          ) : (
+                            <span className="text-sm font-semibold text-primary">Select delivery time slot</span>
+                          )}
                         </div>
-                      ) : (
-                        <div className="space-y-2">
-                          {timeslots.map(slot => (
-                            <button
-                              key={slot.id}
-                              type="button"
-                              onClick={() => setSelectedTimeslotId(slot.id)}
-                              className={`w-full text-left p-3.5 rounded-xl border-2 transition-all ${selectedTimeslotId === slot.id ? (slot.isInstant ? "border-amber-500 bg-amber-50" : "border-primary bg-primary/5") : "border-border/40 bg-white hover:border-primary/30"}`}
-                              data-testid={`timeslot-${slot.id}`}
-                            >
-                              <div className="flex items-center gap-3">
-                                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedTimeslotId === slot.id ? (slot.isInstant ? "border-amber-500" : "border-primary") : "border-slate-300"}`}>
-                                  {selectedTimeslotId === slot.id && <div className={`w-2 h-2 rounded-full ${slot.isInstant ? "bg-amber-500" : "bg-primary"}`} />}
-                                </div>
-                                {slot.isInstant ? (
-                                  <Zap className="w-4 h-4 text-amber-500 shrink-0" />
-                                ) : (
-                                  <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
-                                )}
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between gap-2">
-                                    <span className={`text-sm font-semibold ${slot.isInstant ? "text-amber-700" : "text-foreground"}`}>
-                                      {slot.label}
-                                    </span>
-                                    {slot.isInstant && (slot.extraCharge ?? 0) > 0 ? (
-                                      <span className="text-xs font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">+₹{slot.extraCharge}</span>
-                                    ) : !slot.isInstant ? (
-                                      <span className="text-xs font-semibold text-emerald-600">FREE</span>
-                                    ) : null}
+                        {selectedTimeslot && (
+                          selectedTimeslot.isInstant && (selectedTimeslot.extraCharge ?? 0) > 0
+                            ? <span className="text-xs font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full mr-1">+₹{selectedTimeslot.extraCharge}</span>
+                            : <span className="text-xs font-semibold text-emerald-600 mr-1">FREE</span>
+                        )}
+                        {timeslotExpanded
+                          ? <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" />
+                          : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />}
+                      </button>
+
+                      {timeslotExpanded && (
+                        <div className="border-t border-border/20 p-3 space-y-2">
+                          {timeslotsLoading ? (
+                            <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
+                              <Loader2 className="w-4 h-4 animate-spin" /> Loading slots...
+                            </div>
+                          ) : (
+                            timeslots.map(slot => (
+                              <button
+                                key={slot.id}
+                                type="button"
+                                onClick={() => { setSelectedTimeslotId(slot.id); setTimeslotExpanded(false); }}
+                                className={`w-full text-left p-3 rounded-xl border-2 transition-all ${selectedTimeslotId === slot.id ? (slot.isInstant ? "border-amber-500 bg-amber-50" : "border-primary bg-primary/5") : "border-border/40 bg-white hover:border-primary/30"}`}
+                                data-testid={`timeslot-${slot.id}`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedTimeslotId === slot.id ? (slot.isInstant ? "border-amber-500" : "border-primary") : "border-slate-300"}`}>
+                                    {selectedTimeslotId === slot.id && <div className={`w-2 h-2 rounded-full ${slot.isInstant ? "bg-amber-500" : "bg-primary"}`} />}
                                   </div>
                                   {slot.isInstant ? (
-                                    <p className="text-xs text-amber-600/70 mt-0.5">Delivered immediately via Porter</p>
-                                  ) : slot.startTime && slot.endTime ? (
-                                    <p className="text-xs text-muted-foreground mt-0.5">{slot.startTime} – {slot.endTime}</p>
-                                  ) : null}
+                                    <Zap className="w-4 h-4 text-amber-500 shrink-0" />
+                                  ) : (
+                                    <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span className={`text-sm font-semibold ${slot.isInstant ? "text-amber-700" : "text-foreground"}`}>
+                                        {slot.label}
+                                      </span>
+                                      {slot.isInstant && (slot.extraCharge ?? 0) > 0 ? (
+                                        <span className="text-xs font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">+₹{slot.extraCharge}</span>
+                                      ) : !slot.isInstant ? (
+                                        <span className="text-xs font-semibold text-emerald-600">FREE</span>
+                                      ) : null}
+                                    </div>
+                                    {slot.isInstant ? (
+                                      <p className="text-xs text-amber-600/70 mt-0.5">Delivered immediately via Porter</p>
+                                    ) : slot.startTime && slot.endTime ? (
+                                      <p className="text-xs text-muted-foreground mt-0.5">{slot.startTime} – {slot.endTime}</p>
+                                    ) : null}
+                                  </div>
                                 </div>
-                              </div>
-                            </button>
-                          ))}
+                              </button>
+                            ))
+                          )}
                         </div>
                       )}
                     </div>
