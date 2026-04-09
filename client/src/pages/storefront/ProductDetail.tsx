@@ -275,20 +275,48 @@ export default function ProductDetail() {
             <h2 className="text-xl font-bold text-foreground">Explore New Recipes</h2>
           </div>
           {product.recipes && product.recipes.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {product.recipes.map((r, idx) => (
-                <div key={idx} className="border border-border/40 rounded-2xl p-5 bg-muted/20 hover:bg-muted/40 transition-colors">
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                      <ChefHat className="w-4 h-4 text-primary" />
+            <div className="relative">
+              <div ref={recipeScrollRef} className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
+                {product.recipes.map((r, idx) => (
+                  <div
+                    key={idx}
+                    className="min-w-[240px] sm:min-w-[280px] snap-start bg-card border border-border/30 rounded-2xl overflow-hidden hover:shadow-md transition-shadow flex flex-col"
+                  >
+                    <div className="w-full h-44 overflow-hidden bg-muted/20 flex items-center justify-center">
+                      {r.image ? (
+                        <img src={r.image} alt={r.title} className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" />
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground/40">
+                          <ChefHat className="w-10 h-10" />
+                        </div>
+                      )}
                     </div>
-                    <div>
-                      <h3 className="font-bold text-sm text-foreground mb-1.5">{r.title}</h3>
-                      <p className="text-xs text-muted-foreground leading-relaxed">{r.description}</p>
+                    <div className="p-4 flex flex-col flex-1 gap-2">
+                      <h4 className="font-bold text-sm text-foreground leading-snug line-clamp-2">{r.title}</h4>
+                      <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3 flex-1">{r.description}</p>
+                      <div className="flex items-center justify-between mt-2 flex-wrap gap-2">
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          {r.totalTime && <span>⏱ {r.totalTime}</span>}
+                          {r.difficulty && (
+                            <span className={`px-2 py-0.5 rounded-full font-medium text-[11px] ${
+                              r.difficulty === "Easy" ? "bg-green-100 text-green-700" :
+                              r.difficulty === "Hard" ? "bg-red-100 text-red-700" :
+                              "bg-yellow-100 text-yellow-700"
+                            }`}>{r.difficulty}</span>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => setLocation(`/recipe/product/${product.id}/${idx}`)}
+                          className="text-xs font-semibold text-accent border border-accent rounded-full px-3 py-1 hover:bg-accent hover:text-white transition-colors"
+                        >
+                          View Recipe
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+              <SwipeHint scrollRef={recipeScrollRef} />
             </div>
           ) : (
             <div className="relative">
