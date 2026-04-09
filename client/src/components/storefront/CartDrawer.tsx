@@ -4,11 +4,12 @@ import {
   CheckCircle2, Minus, Plus, ShoppingBag, Trash2,
   MapPin, Banknote, CreditCard, ChevronRight, ClipboardList,
   X, Home, Briefcase, Tag, Navigation, Loader2, AlertCircle, Search,
-  Clock, Zap
+  Clock, Zap, Ticket, ChevronDown, ChevronUp
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useCreateOrder } from "@/hooks/use-orders";
 import { useCustomer } from "@/context/CustomerContext";
+import { useCoupons } from "@/hooks/use-coupons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +23,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import type { CustomerAddress, Timeslot } from "@shared/schema";
+import type { CustomerAddress, Timeslot, Coupon } from "@shared/schema";
 
 import fishImg from "@assets/Gemini_Generated_Image_w6wqkkw6wqkkw6wq_(1)_1772713077919.png";
 import prawnsImg from "@assets/Gemini_Generated_Image_5xy0sd5xy0sd5xy0_1772713090650.png";
@@ -108,6 +109,70 @@ export function CartDrawer() {
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [selectedTimeslotId, setSelectedTimeslotId] = useState<string | null>(null);
   const [expandedInstructions, setExpandedInstructions] = useState<Record<number, boolean>>({});
+
+  // Coupon state
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
+  const [couponInput, setCouponInput] = useState("");
+  const [couponError, setCouponError] = useState("");
+  const [showAllCoupons, setShowAllCoupons] = useState(false);
+
+  const { data: allCoupons = [] } = useCoupons();
+
+  // Collect unique coupon IDs across all cart items
+  const allCartCouponIds = [...new Set(items.flatMap(item => (item as any).couponIds ?? []))];
+  const cartCoupons = allCoupons.filter(c => allCartCouponIds.includes(c.id));
+
+  const isCouponApplicable = (c: Coupon) => c.isActive && c.minOrderAmount <= totalPrice;
+
+  const discountAmount = appliedCoupon
+    ? appliedCoupon.type === "flat"
+      ? Math.min(appliedCoupon.discountValue, totalPrice)
+      : Math.round((totalPrice * appliedCoupon.discountValue) / 100)
+    : 0;
+
+  const applyCartCoupon = (coupon: Coupon) => {
+    if (!isCouponApplicable(coupon)) {
+      const needed = coupon.minOrderAmount - totalPrice;
+      setCouponError(`Add ₹${needed} more to your cart to use this coupon`);
+      return;
+    }
+    setAppliedCoupon(coupon);
+    setCouponError("");
+    setCouponInput("");
+  };
+
+  const applyFromInput = () => {
+    const code = couponInput.trim().toUpperCase();
+    if (!code) return;
+    const coupon = cartCoupons.find(c => c.code === code);
+    if (!coupon) {
+      setCouponError("This code is not valid for items in your cart");
+      return;
+    }
+    applyCartCoupon(coupon);
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponError("");
+  };
+
+  // Auto-invalidate coupon if cart total drops below coupon minimum
+  useEffect(() => {
+    if (appliedCoupon && appliedCoupon.minOrderAmount > totalPrice) {
+      setAppliedCoupon(null);
+      setCouponError(`Coupon removed — cart total fell below ₹${appliedCoupon.minOrderAmount}`);
+    }
+  }, [totalPrice, appliedCoupon]);
+
+  // Clear coupon when cart is emptied
+  useEffect(() => {
+    if (items.length === 0) {
+      setAppliedCoupon(null);
+      setCouponError("");
+      setCouponInput("");
+    }
+  }, [items.length]);
 
   const { data: timeslots = [], isLoading: timeslotsLoading } = useQuery<Timeslot[]>({
     queryKey: ["/api/timeslots"],
@@ -446,6 +511,116 @@ export function CartDrawer() {
                       ))}
                     </div>
 
+                    {/* Coupon Section */}
+                    {cartCoupons.length > 0 && (
+                      <div className="mx-4 mt-4 border border-border/40 rounded-2xl overflow-hidden">
+                        <div className="flex items-center gap-2 px-4 py-3 bg-muted/20 border-b border-border/30">
+                          <Ticket className="w-4 h-4 text-primary" />
+                          <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex-1">Available Coupons</h3>
+                          {cartCoupons.length > 3 && (
+                            <button
+                              onClick={() => setShowAllCoupons(s => !s)}
+                              className="text-xs text-primary font-semibold flex items-center gap-0.5"
+                            >
+                              {showAllCoupons ? <><ChevronUp className="w-3 h-3" /> Less</> : <><ChevronDown className="w-3 h-3" /> More</>}
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Applied coupon banner */}
+                        {appliedCoupon && (
+                          <div className="flex items-center justify-between px-4 py-2.5 bg-emerald-50 border-b border-emerald-100">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                              <div>
+                                <span className="font-mono font-bold text-sm text-emerald-700 tracking-wider">{appliedCoupon.code}</span>
+                                <p className="text-xs text-emerald-600">
+                                  {appliedCoupon.type === "flat" ? `₹${discountAmount} off applied!` : `${appliedCoupon.discountValue}% off — you save ₹${discountAmount}!`}
+                                </p>
+                              </div>
+                            </div>
+                            <button onClick={removeCoupon} className="text-xs text-red-500 font-semibold hover:text-red-700 flex items-center gap-1">
+                              <X className="w-3 h-3" /> Remove
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Manual code entry */}
+                        {!appliedCoupon && (
+                          <div className="px-4 py-3 border-b border-border/20">
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={couponInput}
+                                onChange={e => { setCouponInput(e.target.value.toUpperCase()); setCouponError(""); }}
+                                onKeyDown={e => e.key === "Enter" && applyFromInput()}
+                                placeholder="Enter coupon code"
+                                className="flex-1 h-9 px-3 text-sm font-mono font-semibold tracking-wider rounded-lg border border-border/60 bg-muted/30 focus:outline-none focus:border-primary/60 placeholder:font-normal placeholder:tracking-normal"
+                                data-testid="input-coupon-code"
+                              />
+                              <button
+                                onClick={applyFromInput}
+                                disabled={!couponInput.trim()}
+                                className="px-4 h-9 rounded-lg bg-primary text-white text-xs font-bold disabled:opacity-40 hover:bg-primary/90 transition-colors"
+                                data-testid="button-apply-coupon"
+                              >
+                                Apply
+                              </button>
+                            </div>
+                            {couponError && (
+                              <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
+                                <AlertCircle className="w-3 h-3 shrink-0" /> {couponError}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Coupon list */}
+                        <div className="divide-y divide-border/20">
+                          {(showAllCoupons ? cartCoupons : cartCoupons.slice(0, 3)).map(coupon => {
+                            const applicable = isCouponApplicable(coupon);
+                            const isApplied = appliedCoupon?.id === coupon.id;
+                            const needed = applicable ? 0 : coupon.minOrderAmount - totalPrice;
+                            return (
+                              <div
+                                key={coupon.id}
+                                className={`flex items-center justify-between px-4 py-3 transition-colors ${applicable ? "bg-background hover:bg-muted/10" : "bg-muted/5 opacity-60"}`}
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                  <div className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${applicable ? "bg-primary/10" : "bg-muted"}`}>
+                                    <Tag className={`w-3.5 h-3.5 ${applicable ? "text-primary" : "text-muted-foreground"}`} />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className={`font-mono font-bold text-sm tracking-wider border border-dashed rounded px-1.5 py-0.5 ${applicable ? "border-primary/40 text-primary bg-primary/5" : "border-border/60 text-muted-foreground bg-muted/40"}`}>
+                                      {coupon.code}
+                                    </span>
+                                    <p className="text-xs text-muted-foreground mt-0.5 truncate">{coupon.description}</p>
+                                    {!applicable && coupon.minOrderAmount > 0 && (
+                                      <p className="text-[10px] text-amber-600 mt-0.5 font-medium">Add ₹{needed} more to unlock</p>
+                                    )}
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => applicable && !isApplied && applyCartCoupon(coupon)}
+                                  disabled={!applicable || isApplied}
+                                  className={`ml-3 shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${
+                                    isApplied
+                                      ? "bg-emerald-100 text-emerald-700 cursor-default"
+                                      : applicable
+                                        ? "bg-primary/10 text-primary hover:bg-primary hover:text-white"
+                                        : "bg-muted text-muted-foreground cursor-not-allowed"
+                                  }`}
+                                >
+                                  {isApplied ? "✓ Applied" : applicable ? "Apply" : "Locked"}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Bill Details */}
                     <div className="mx-4 mt-4 border border-dashed border-border/60 rounded-2xl p-4 space-y-2.5">
                       <h3 className="font-semibold text-foreground text-sm mb-3">Bill Details</h3>
                       {items.map(item => (
@@ -459,6 +634,14 @@ export function CartDrawer() {
                           <span className="text-muted-foreground">Subtotal</span>
                           <span className="font-medium">₹{totalPrice}</span>
                         </div>
+                        {discountAmount > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-emerald-600 flex items-center gap-1">
+                              <Tag className="w-3 h-3" /> Coupon ({appliedCoupon!.code})
+                            </span>
+                            <span className="font-semibold text-emerald-600">−₹{discountAmount}</span>
+                          </div>
+                        )}
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Delivery fee</span>
                           {selectedTimeslot?.isInstant && (selectedTimeslot.extraCharge ?? 0) > 0 ? (
@@ -473,9 +656,14 @@ export function CartDrawer() {
                       </div>
                       <div className="pt-2 border-t border-border/40 flex justify-between items-center">
                         <span className="font-bold text-foreground">Total</span>
-                        <span className="text-lg font-bold text-primary">
-                          ₹{totalPrice + (selectedTimeslot?.isInstant ? (selectedTimeslot.extraCharge ?? 0) : 0)}
-                        </span>
+                        <div className="text-right">
+                          {discountAmount > 0 && (
+                            <p className="text-xs text-muted-foreground line-through">₹{totalPrice + (selectedTimeslot?.isInstant ? (selectedTimeslot.extraCharge ?? 0) : 0)}</p>
+                          )}
+                          <span className="text-lg font-bold text-primary">
+                            ₹{totalPrice - discountAmount + (selectedTimeslot?.isInstant ? (selectedTimeslot.extraCharge ?? 0) : 0)}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
@@ -621,9 +809,17 @@ export function CartDrawer() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-xs text-muted-foreground">Total</p>
+                        {discountAmount > 0 && (
+                          <p className="text-xs text-muted-foreground line-through">
+                            ₹{totalPrice + (selectedTimeslot?.isInstant ? (selectedTimeslot.extraCharge ?? 0) : 0)}
+                          </p>
+                        )}
                         <p className="text-xl font-bold text-primary">
-                          ₹{totalPrice + (selectedTimeslot?.isInstant ? (selectedTimeslot.extraCharge ?? 0) : 0)}
+                          ₹{totalPrice - discountAmount + (selectedTimeslot?.isInstant ? (selectedTimeslot.extraCharge ?? 0) : 0)}
                         </p>
+                        {discountAmount > 0 && (
+                          <p className="text-[10px] text-emerald-600 font-semibold">Saved ₹{discountAmount} with {appliedCoupon!.code}</p>
+                        )}
                         {selectedTimeslot?.isInstant && (selectedTimeslot.extraCharge ?? 0) > 0 && (
                           <p className="text-[10px] text-amber-600">incl. ₹{selectedTimeslot.extraCharge} instant delivery</p>
                         )}
