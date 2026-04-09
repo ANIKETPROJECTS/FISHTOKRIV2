@@ -1,4 +1,5 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
+import { useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -7,7 +8,6 @@ import { CartProvider } from "@/context/CartContext";
 import { CustomerProvider } from "@/context/CustomerContext";
 import { HubProvider } from "@/context/HubContext";
 import NotFound from "@/pages/not-found";
-
 import Home from "@/pages/storefront/Home";
 import ProductDetail from "@/pages/storefront/ProductDetail";
 import CategoryPage from "@/pages/storefront/CategoryPage";
@@ -21,6 +21,14 @@ import Products from "@/pages/admin/Products";
 import Orders from "@/pages/admin/Orders";
 import SectionsAdmin from "@/pages/admin/Sections";
 import AdminLayout from "@/components/admin/AdminLayout";
+
+function ScrollToTop() {
+  const [location] = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [location]);
+  return null;
+}
 
 function Router() {
   return (
@@ -64,6 +72,7 @@ function App() {
           <CartProvider>
             <TooltipProvider>
               <Toaster />
+              <ScrollToTop />
               <Router />
             </TooltipProvider>
           </CartProvider>
