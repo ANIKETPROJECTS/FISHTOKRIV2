@@ -8,6 +8,8 @@ const inventoryBatchSchema = new mongoose.Schema({
   quantity: { type: Number, required: true },
   shelfLifeDays: { type: Number, required: true },
   entryDate: { type: Date, default: Date.now },
+  expiryDate: { type: Date, default: null },
+  remainingDays: { type: Number, default: null },
 });
 
 const productSchema = new mongoose.Schema({

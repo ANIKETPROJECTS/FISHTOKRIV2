@@ -10,6 +10,7 @@ import { setImage, getImage, deleteImage } from "./imageStore";
 import { insertCarouselSlideSchema, insertCategorySchema, insertSectionSchema, insertComboSchema, insertCustomerAddressSchema, updateCustomerSchema, insertInventoryBatchSchema } from "@shared/schema";
 import { SuperHubModel, SubHubModel } from "./adminDb";
 import { getHubModels } from "./hubConnections";
+import { computeExpiryDate, computeRemainingDays } from "./inventorySync";
 
 declare module "express-session" {
   interface SessionData {
@@ -248,6 +249,8 @@ export async function registerRoutes(
     quantity: b.quantity,
     shelfLifeDays: b.shelfLifeDays,
     entryDate: b.entryDate,
+    expiryDate: b.expiryDate ?? null,
+    remainingDays: b.remainingDays ?? null,
   });
 
   app.get("/api/products/:id/batches", requireAuth, async (req, res) => {
@@ -267,7 +270,10 @@ export async function registerRoutes(
       const input = insertInventoryBatchSchema.parse(req.body);
       const doc = await hub.Product.findById(req.params.id).lean() as any;
       if (!doc) return res.status(404).json({ message: "Product not found" });
-      const newBatch = { quantity: input.quantity, shelfLifeDays: input.shelfLifeDays, entryDate: new Date() };
+      const entryDate = new Date();
+      const expiryDate = computeExpiryDate(entryDate, input.shelfLifeDays);
+      const remainingDays = computeRemainingDays(expiryDate);
+      const newBatch = { quantity: input.quantity, shelfLifeDays: input.shelfLifeDays, entryDate, expiryDate, remainingDays };
       const updatedDoc = await hub.Product.findByIdAndUpdate(
         req.params.id,
         {

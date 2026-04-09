@@ -117,6 +117,8 @@ export type InventoryBatch = {
   quantity: number;
   shelfLifeDays: number;
   entryDate: Date;
+  expiryDate: Date | null;
+  remainingDays: number | null;
 };
 
 export const insertInventoryBatchSchema = z.object({
