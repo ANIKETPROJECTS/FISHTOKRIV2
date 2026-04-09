@@ -569,8 +569,40 @@ function InventoryDialog({ product, open, onOpenChange }: { product: Product; op
     return d;
   };
 
+  const getRemainingDays = (entryDate: Date | string, shelfLifeDays: number) => {
+    const expiryMs = getExpiryDate(entryDate, shelfLifeDays).getTime();
+    const nowMs = Date.now();
+    return (expiryMs - nowMs) / (24 * 60 * 60 * 1000);
+  };
+
   const isExpired = (entryDate: Date | string, shelfLifeDays: number) => {
-    return getExpiryDate(entryDate, shelfLifeDays) < new Date();
+    return getRemainingDays(entryDate, shelfLifeDays) <= 0;
+  };
+
+  const formatRemaining = (remainingDays: number) => {
+    if (remainingDays <= 0) {
+      const ago = Math.abs(remainingDays);
+      if (ago < 1) return `Expired ${Math.round(ago * 24)}h ago`;
+      return `Expired ${ago.toFixed(1)}d ago`;
+    }
+    if (remainingDays < 1) return `${Math.round(remainingDays * 24)}h left`;
+    return `${remainingDays.toFixed(1)}d left`;
+  };
+
+  const getRemainingColor = (remainingDays: number, shelfLifeDays: number) => {
+    if (remainingDays <= 0) return "text-red-600 font-semibold";
+    const pct = remainingDays / shelfLifeDays;
+    if (pct <= 0.25) return "text-orange-600 font-semibold";
+    if (pct <= 0.5) return "text-amber-600 font-medium";
+    return "text-emerald-600 font-medium";
+  };
+
+  const getRemainingBarColor = (remainingDays: number, shelfLifeDays: number) => {
+    if (remainingDays <= 0) return "bg-red-400";
+    const pct = remainingDays / shelfLifeDays;
+    if (pct <= 0.25) return "bg-orange-400";
+    if (pct <= 0.5) return "bg-amber-400";
+    return "bg-emerald-400";
   };
 
   return (
@@ -629,37 +661,48 @@ function InventoryDialog({ product, open, onOpenChange }: { product: Product; op
             )}
             <div className="space-y-2">
               {batches.map((batch, index) => {
-                const expired = isExpired(batch.entryDate, batch.shelfLifeDays);
+                const remaining = getRemainingDays(batch.entryDate, batch.shelfLifeDays);
+                const expired = remaining <= 0;
                 const expiryDate = getExpiryDate(batch.entryDate, batch.shelfLifeDays);
+                const barPct = expired ? 0 : Math.min(100, (remaining / batch.shelfLifeDays) * 100);
                 return (
                   <div
                     key={batch.id}
                     data-testid={`card-batch-${batch.id}`}
-                    className={`flex items-center justify-between rounded-lg border px-4 py-3 ${expired ? "border-red-200 bg-red-50" : index === 0 ? "border-amber-200 bg-amber-50" : "bg-card"}`}
+                    className={`rounded-lg border px-4 py-3 space-y-2 ${expired ? "border-red-200 bg-red-50" : index === 0 ? "border-amber-200 bg-amber-50" : "bg-card"}`}
                   >
-                    <div className="space-y-0.5 flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold">{batch.quantity} units</span>
-                        {index === 0 && <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700 border-amber-200">Next to sell</Badge>}
+                        {index === 0 && !expired && <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700 border-amber-200">Next to sell</Badge>}
                         {expired && <Badge variant="secondary" className="text-xs bg-red-100 text-red-700 border-red-200">Expired</Badge>}
+                        <span className={`text-xs ${getRemainingColor(remaining, batch.shelfLifeDays)}`}>
+                          {formatRemaining(remaining)}
+                        </span>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        Added: {formatDate(batch.entryDate)} &bull; Shelf life: {batch.shelfLifeDays}d
-                      </p>
-                      <p className={`text-xs ${expired ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
-                        {expired ? "Expired" : "Expires"}: {formatDate(expiryDate)}
-                      </p>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0 text-muted-foreground hover:text-destructive h-7 w-7"
+                        disabled={isDeleting}
+                        onClick={() => deleteBatch(batch.id)}
+                        data-testid={`button-delete-batch-${batch.id}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="shrink-0 text-muted-foreground hover:text-destructive"
-                      disabled={isDeleting}
-                      onClick={() => deleteBatch(batch.id)}
-                      data-testid={`button-delete-batch-${batch.id}`}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+
+                    <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${getRemainingBarColor(remaining, batch.shelfLifeDays)}`}
+                        style={{ width: `${barPct}%` }}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>Added: {formatDate(batch.entryDate)}</span>
+                      <span>Shelf life: {batch.shelfLifeDays}d &bull; {expired ? "Expired" : "Expires"}: {formatDate(expiryDate)}</span>
+                    </div>
                   </div>
                 );
               })}
