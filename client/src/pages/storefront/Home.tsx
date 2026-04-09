@@ -212,78 +212,77 @@ export default function Home() {
           <SwipeHint />
         </div>
 
-        {/* Dynamic Sections from DB */}
-        {sections.map((section) => {
-          if (section.type === "combos") {
-            return (
-              <section key={section.id} className="mb-7">
-                <div className="flex items-center gap-2 mb-3">
-                  <Tag className="w-5 h-5 text-accent" />
-                  <h2 className="text-xl sm:text-2xl font-medium text-foreground uppercase tracking-wide">
-                    {section.title}
-                  </h2>
-                </div>
-                <div className="flex overflow-x-auto gap-4 sm:gap-5 scrollbar-hide snap-x">
-                  {(() => {
-                    const productMap = Object.fromEntries((products ?? []).map(p => [p.id, p]));
-                    return combos.map(combo => {
-                    const comboImages = combo.includes
-                      .map(inc => {
-                        const product = productMap[inc.productId];
-                        return product?.imageUrl || (product ? getFallbackImage(product.category) : null);
-                      })
-                      .filter(Boolean) as string[];
-                    return (
-                      <div key={combo.id} className="min-w-[200px] sm:min-w-[230px] snap-start flex-none">
-                        <div className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+        {/* ── Combos Special (hardcoded, always first) ── */}
+        {combos.length > 0 && (() => {
+          const productMap = Object.fromEntries((products ?? []).map(p => [p.id, p]));
+          return (
+            <section className="mb-7">
+              <div className="flex items-center gap-2 mb-3">
+                <Tag className="w-5 h-5 text-accent" />
+                <h2 className="text-xl sm:text-2xl font-medium text-foreground uppercase tracking-wide">
+                  Combos Special
+                </h2>
+              </div>
+              <div className="flex overflow-x-auto gap-4 sm:gap-5 scrollbar-hide snap-x">
+                {combos.map(combo => {
+                  const comboImages = combo.includes
+                    .map(inc => {
+                      const product = productMap[inc.productId];
+                      return product?.imageUrl || (product ? getFallbackImage(product.category) : null);
+                    })
+                    .filter(Boolean) as string[];
+                  return (
+                    <div key={combo.id} className="min-w-[200px] sm:min-w-[230px] snap-start flex-none">
+                      <div className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                        <Link href={`/combo/${combo.id}`}>
+                          <div className="h-36 overflow-hidden rounded-t-2xl cursor-pointer">
+                            <ComboImages images={comboImages} />
+                          </div>
+                        </Link>
+                        <div className="p-3">
                           <Link href={`/combo/${combo.id}`}>
-                            <div className="h-36 overflow-hidden rounded-t-2xl cursor-pointer">
-                              <ComboImages images={comboImages} />
-                            </div>
+                            <h3 className="font-semibold text-foreground text-sm leading-tight truncate cursor-pointer hover:text-primary">{combo.name}</h3>
                           </Link>
-                          <div className="p-3">
-                            <Link href={`/combo/${combo.id}`}>
-                              <h3 className="font-semibold text-foreground text-sm leading-tight truncate cursor-pointer hover:text-primary">{combo.name}</h3>
-                            </Link>
-                            <p className="text-xs text-muted-foreground mt-0.5 truncate">{combo.description}</p>
-                            <div className="flex items-center justify-between mt-2.5">
-                              <div>
-                                <span className="text-sm font-bold text-primary">₹{combo.discountedPrice}</span>
-                                <span className="text-xs text-muted-foreground line-through ml-1.5">₹{combo.originalPrice}</span>
-                              </div>
-                              <button
-                                onClick={() => addToCart({
-                                  id: -Math.abs(parseInt(combo.id.slice(-6), 16) || 9999),
-                                  name: combo.name,
-                                  price: combo.discountedPrice,
-                                  category: "Combo",
-                                  status: "available",
-                                  unit: combo.weight,
-                                  imageUrl: null,
-                                  isArchived: false,
-                                  updatedAt: new Date(),
-                                  limitedStockNote: null,
-                                  sectionId: null,
-                                  isCombo: true,
-                                } as any)}
-                                className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-xl font-light hover:bg-primary/90 transition-colors shadow-md shadow-primary/20"
-                                data-testid={`button-add-combo-${combo.id}`}
-                              >
-                                +
-                              </button>
+                          <p className="text-xs text-muted-foreground mt-0.5 truncate">{combo.description}</p>
+                          <div className="flex items-center justify-between mt-2.5">
+                            <div>
+                              <span className="text-sm font-bold text-primary">₹{combo.discountedPrice}</span>
+                              <span className="text-xs text-muted-foreground line-through ml-1.5">₹{combo.originalPrice}</span>
                             </div>
+                            <button
+                              onClick={() => addToCart({
+                                id: -Math.abs(parseInt(combo.id.slice(-6), 16) || 9999),
+                                name: combo.name,
+                                price: combo.discountedPrice,
+                                category: "Combo",
+                                status: "available",
+                                unit: combo.weight,
+                                imageUrl: null,
+                                isArchived: false,
+                                updatedAt: new Date(),
+                                limitedStockNote: null,
+                                sectionId: null,
+                                isCombo: true,
+                              } as any)}
+                              className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-xl font-light hover:bg-primary/90 transition-colors shadow-md shadow-primary/20"
+                              data-testid={`button-add-combo-${combo.id}`}
+                            >
+                              +
+                            </button>
                           </div>
                         </div>
                       </div>
-                    );
-                  });
-                  })()}
-                </div>
-                <SwipeHint />
-              </section>
-            );
-          }
+                    </div>
+                  );
+                })}
+              </div>
+              <SwipeHint />
+            </section>
+          );
+        })()}
 
+        {/* Dynamic Sections from DB (skip combos type — handled above) */}
+        {sections.filter(s => s.type !== "combos").map((section) => {
           // "products" type section
           const sectionProducts = getSectionProducts(section.id);
           return (
