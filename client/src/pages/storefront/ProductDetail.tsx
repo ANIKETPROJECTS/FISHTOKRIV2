@@ -222,6 +222,36 @@ export default function ProductDetail() {
               ))}
             </div>
 
+            {/* Gross / Net Weight row — only shown when at least one is set */}
+            {(product.grossWeight || product.netWeight) && (
+              <div className="flex items-stretch gap-0 divide-x divide-border border border-border/40 rounded-2xl overflow-hidden bg-muted/10">
+                {product.grossWeight && (
+                  <div className="flex-1 flex items-center gap-3 py-3 px-4">
+                    <div className="flex flex-col items-center shrink-0">
+                      <img src={weighScaleIcon} alt="Gross Weight" className="w-6 h-6 object-contain object-bottom dark:invert opacity-60" />
+                      <span className="text-[10px] text-muted-foreground mt-1 font-medium">Gross Wt</span>
+                    </div>
+                    <div>
+                      <span className="text-sm font-bold text-foreground">{product.grossWeight}</span>
+                      <p className="text-[10px] text-muted-foreground leading-none mt-0.5">Before cleaning</p>
+                    </div>
+                  </div>
+                )}
+                {product.netWeight && (
+                  <div className="flex-1 flex items-center gap-3 py-3 px-4">
+                    <div className="flex flex-col items-center shrink-0">
+                      <img src={weighScaleIcon} alt="Net Weight" className="w-6 h-6 object-contain object-bottom dark:invert" />
+                      <span className="text-[10px] text-muted-foreground mt-1 font-medium">Net Wt</span>
+                    </div>
+                    <div>
+                      <span className="text-sm font-bold text-foreground">{product.netWeight}</span>
+                      <p className="text-[10px] text-muted-foreground leading-none mt-0.5">You receive</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Price */}
             <div className="bg-muted/30 border border-border/30 rounded-2xl px-5 py-4">
               <div className="flex items-end gap-3 mb-1">

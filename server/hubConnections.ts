@@ -27,6 +27,8 @@ const productSchema = new mongoose.Schema({
   sectionId: { type: mongoose.Schema.Types.Mixed, default: null },
   description: { type: String, default: null },
   weight: { type: String, default: null },
+  grossWeight: { type: String, default: null },
+  netWeight: { type: String, default: null },
   pieces: { type: String, default: null },
   serves: { type: String, default: null },
   discountPct: { type: Number, default: null },

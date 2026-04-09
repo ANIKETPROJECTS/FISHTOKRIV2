@@ -329,6 +329,8 @@ function ProductDialog({ open, onOpenChange, product }: { open: boolean, onOpenC
       sectionId: product.sectionId || null,
       description: product.description || '',
       weight: product.weight || '',
+      grossWeight: product.grossWeight || '',
+      netWeight: product.netWeight || '',
       pieces: product.pieces || '',
       serves: product.serves || '',
       quantity: product.quantity ?? 0,
@@ -347,7 +349,7 @@ function ProductDialog({ open, onOpenChange, product }: { open: boolean, onOpenC
     } : {
       name: '', category: 'Fish', subCategory: '', price: 0, originalPrice: 0,
       unit: 'per kg', imageUrl: '', status: 'available', limitedStockNote: '',
-      sectionId: null, description: '', weight: '', pieces: '', serves: '',
+      sectionId: null, description: '', weight: '', grossWeight: '', netWeight: '', pieces: '', serves: '',
       quantity: 0, recipes: [],
     }
   });
@@ -435,6 +437,12 @@ function ProductDialog({ open, onOpenChange, product }: { open: boolean, onOpenC
               )} />
               <FormField control={form.control} name="weight" render={({ field }) => (
                 <FormItem><FormLabel>Weight</FormLabel><FormControl><Input placeholder="e.g. 500 g" {...field} value={field.value || ''} /></FormControl></FormItem>
+              )} />
+              <FormField control={form.control} name="grossWeight" render={({ field }) => (
+                <FormItem><FormLabel>Gross Weight <span className="text-xs font-normal text-muted-foreground">(before cleaning)</span></FormLabel><FormControl><Input placeholder="e.g. 750 g" {...field} value={field.value || ''} /></FormControl></FormItem>
+              )} />
+              <FormField control={form.control} name="netWeight" render={({ field }) => (
+                <FormItem><FormLabel>Net Weight <span className="text-xs font-normal text-muted-foreground">(delivered to customer)</span></FormLabel><FormControl><Input placeholder="e.g. 500 g" {...field} value={field.value || ''} /></FormControl></FormItem>
               )} />
               <FormField control={form.control} name="pieces" render={({ field }) => (
                 <FormItem><FormLabel>Pieces</FormLabel><FormControl><Input placeholder="e.g. 2–3 Pieces" {...field} value={field.value || ''} /></FormControl></FormItem>

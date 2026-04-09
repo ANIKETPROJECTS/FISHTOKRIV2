@@ -59,6 +59,8 @@ export type Product = {
   sectionId: string | string[] | null;
   description: string | null;
   weight: string | null;
+  grossWeight: string | null;
+  netWeight: string | null;
   pieces: string | null;
   serves: string | null;
   discountPct: number | null;
@@ -80,6 +82,8 @@ export type InsertProduct = {
   sectionId?: string | string[] | null;
   description?: string | null;
   weight?: string | null;
+  grossWeight?: string | null;
+  netWeight?: string | null;
   pieces?: string | null;
   serves?: string | null;
   quantity?: number | null;
@@ -176,6 +180,8 @@ export const insertProductSchema = z.object({
   sectionId: z.union([z.string(), z.array(z.string())]).nullable().optional(),
   description: z.string().nullable().optional(),
   weight: z.string().nullable().optional(),
+  grossWeight: z.string().nullable().optional(),
+  netWeight: z.string().nullable().optional(),
   pieces: z.string().nullable().optional(),
   serves: z.string().nullable().optional(),
   quantity: z.number().nullable().optional(),

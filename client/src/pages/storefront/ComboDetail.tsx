@@ -285,6 +285,31 @@ export default function ComboDetail() {
 
   const otherCombos = allCombos.filter((c) => c.id !== id).slice(0, 8);
 
+  // Weight parsing + combo gross/net weight calculation
+  const parseWeightGrams = (str: string | null | undefined): number | null => {
+    if (!str) return null;
+    const m = str.match(/([\d.]+)\s*(kg|g|gm|gram|grams|kilogram|kilograms)/i);
+    if (!m) return null;
+    const val = parseFloat(m[1]);
+    return m[2].toLowerCase().startsWith("kg") ? val * 1000 : val;
+  };
+  const fmtGrams = (g: number) => {
+    if (g >= 1000) { const kg = g / 1000; return `${kg % 1 === 0 ? kg.toFixed(0) : kg.toFixed(1)} kg`; }
+    return `${Math.round(g)} g`;
+  };
+  const comboGrossGrams = includedProducts.reduce<number | null>((sum, { product }) => {
+    const g = parseWeightGrams(product?.grossWeight);
+    if (g === null) return sum;
+    return (sum ?? 0) + g;
+  }, null);
+  const comboNetGrams = includedProducts.reduce<number | null>((sum, { product }) => {
+    const g = parseWeightGrams(product?.netWeight);
+    if (g === null) return sum;
+    return (sum ?? 0) + g;
+  }, null);
+  const comboGrossWeight = comboGrossGrams !== null ? fmtGrams(comboGrossGrams) : null;
+  const comboNetWeight = comboNetGrams !== null ? fmtGrams(comboNetGrams) : null;
+
   // Collect all recipes from the combo's included products
   const allProductRecipes = includedProducts.flatMap(({ product }) => {
     if (!product) return [];
@@ -440,6 +465,36 @@ export default function ComboDetail() {
                 </div>
               ))}
             </div>
+
+            {/* Combo Gross / Net Weight — calculated from included products */}
+            {(comboGrossWeight || comboNetWeight) && (
+              <div className="flex items-stretch gap-0 divide-x divide-border border border-border/40 rounded-2xl overflow-hidden bg-muted/10">
+                {comboGrossWeight && (
+                  <div className="flex-1 flex items-center gap-3 py-3 px-4">
+                    <div className="flex flex-col items-center shrink-0">
+                      <img src={weighScaleIcon} alt="Gross Weight" className="w-6 h-6 object-contain object-bottom dark:invert opacity-60" />
+                      <span className="text-[10px] text-muted-foreground mt-1 font-medium">Gross Wt</span>
+                    </div>
+                    <div>
+                      <span className="text-sm font-bold text-foreground">{comboGrossWeight}</span>
+                      <p className="text-[10px] text-muted-foreground leading-none mt-0.5">Before cleaning</p>
+                    </div>
+                  </div>
+                )}
+                {comboNetWeight && (
+                  <div className="flex-1 flex items-center gap-3 py-3 px-4">
+                    <div className="flex flex-col items-center shrink-0">
+                      <img src={weighScaleIcon} alt="Net Weight" className="w-6 h-6 object-contain object-bottom dark:invert" />
+                      <span className="text-[10px] text-muted-foreground mt-1 font-medium">Net Wt</span>
+                    </div>
+                    <div>
+                      <span className="text-sm font-bold text-foreground">{comboNetWeight}</span>
+                      <p className="text-[10px] text-muted-foreground leading-none mt-0.5">You receive</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* What's Included */}
             <div>

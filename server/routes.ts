@@ -111,6 +111,7 @@ export async function registerRoutes(
     imageUrl: doc.imageUrl ?? null, isArchived: doc.isArchived ?? false,
     updatedAt: doc.updatedAt, sectionId: doc.sectionId ?? null,
     description: doc.description ?? null, weight: doc.weight ?? null,
+    grossWeight: doc.grossWeight ?? null, netWeight: doc.netWeight ?? null,
     pieces: doc.pieces ?? null, serves: doc.serves ?? null,
     discountPct: doc.discountPct ?? null, quantity: doc.quantity ?? null,
     couponIds: (doc.couponIds ?? []).map((id: any) => id.toString()),
