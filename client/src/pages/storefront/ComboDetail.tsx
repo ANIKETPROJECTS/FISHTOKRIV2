@@ -188,16 +188,45 @@ function IncludedProductCard({ item, product }: {
   );
 }
 
-function ComboCard({ combo }: { combo: Combo }) {
+function ComboImages({ images }: { images: string[] }) {
+  const n = images.length;
+  if (n === 0) return <div className="w-full h-full flex items-center justify-center text-4xl">🎁</div>;
+  const slotPct = 100 / n;
+  const widthPct = n === 1 ? 100 : slotPct + slotPct * 0.45;
+  return (
+    <div className="relative w-full h-full overflow-hidden">
+      {images.map((img, i) => (
+        <div
+          key={i}
+          className="absolute top-0 bottom-0"
+          style={{ left: `${i * slotPct}%`, width: `${widthPct}%`, zIndex: i }}
+        >
+          <img src={img} alt="" className="w-full h-full object-cover" />
+          {i < n - 1 && (
+            <div className="absolute top-0 right-0 bottom-0 w-4 bg-gradient-to-r from-transparent to-black/10" />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ComboCard({ combo, productMap }: { combo: Combo; productMap: Record<string, Product> }) {
   const [, navigate] = useLocation();
   const savings = combo.originalPrice - combo.discountedPrice;
+  const comboImages = combo.includes
+    .map((inc) => {
+      const product = productMap[inc.productId];
+      return product?.imageUrl || (product ? getFallbackImage(product.category) : null);
+    })
+    .filter(Boolean) as string[];
   return (
     <div
       onClick={() => navigate(`/combo/${combo.id}`)}
-      className="min-w-[200px] sm:min-w-[220px] snap-start bg-card border border-border/30 rounded-2xl overflow-hidden hover:shadow-md hover:border-primary/20 transition-all cursor-pointer group flex flex-col"
+      className="min-w-[200px] sm:min-w-[220px] snap-start bg-white dark:bg-card border border-border/30 rounded-2xl overflow-hidden hover:shadow-md hover:border-primary/20 transition-all cursor-pointer group flex flex-col"
     >
-      <div className="w-full h-36 bg-muted/20 overflow-hidden">
-        <div className="w-full h-full flex items-center justify-center text-4xl group-hover:scale-105 transition-transform duration-300">🎁</div>
+      <div className="w-full h-36 bg-muted/20 overflow-hidden rounded-t-2xl">
+        <ComboImages images={comboImages} />
       </div>
       <div className="p-3 flex flex-col gap-1.5 flex-1">
         <p className="text-xs font-bold text-primary uppercase tracking-wide">Combo</p>
@@ -627,7 +656,7 @@ export default function ComboDetail() {
             <div className="relative">
               <div ref={combosScrollRef} className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
                 {otherCombos.map((c) => (
-                  <ComboCard key={c.id} combo={c} />
+                  <ComboCard key={c.id} combo={c} productMap={productMap} />
                 ))}
               </div>
               <SwipeHint scrollRef={combosScrollRef} />
