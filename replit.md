@@ -51,6 +51,8 @@ The app uses **multiple MongoDB databases** — one per hub (location), plus sha
 
 Each storefront API request includes an `X-Hub-DB` header (set by the frontend based on the selected location) to route reads and writes to the correct hub database. No "fishtokri" default database is created.
 
+Per-hub collections include: products, sections, carousel, categories, combos, and **timeslots**. Timeslots are auto-seeded with defaults on first fetch if the hub DB has none.
+
 ## Environment Variables
 
 - `MONGODB_URI` — MongoDB connection string (required, set as a secret)
@@ -68,7 +70,9 @@ Each storefront API request includes an `X-Hub-DB` header (set by the frontend b
 ### Customer Storefront
 - Dynamic product browsing with category filters (Fish, Prawns, Chicken, Mutton, Masalas, etc.)
 - Carousel banners, "Today's Fresh Catch" hero section
-- Shopping cart with slide-up drawer and order request flow
+- Shopping cart with slide-up drawer and order request flow, including **delivery time slot selection**
+- Instant Delivery option (via Porter) with ₹49 extra charge shown clearly in cart and bill
+- Scheduled delivery slots (Morning, Midday, Afternoon, Evening) stored in per-hub `timeslots` collection
 - Availability badges, combo specials
 - Homepage sections driven by MongoDB `sections` collection — fully dynamic
 

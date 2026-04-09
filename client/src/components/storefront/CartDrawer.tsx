@@ -3,12 +3,13 @@ import { useLocation } from "wouter";
 import {
   CheckCircle2, Minus, Plus, ShoppingBag, Trash2,
   MapPin, Banknote, CreditCard, ChevronRight, ClipboardList,
-  X, Home, Briefcase, Tag, Navigation, Loader2, AlertCircle, Search
+  X, Home, Briefcase, Tag, Navigation, Loader2, AlertCircle, Search,
+  Clock, Zap
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useCreateOrder } from "@/hooks/use-orders";
 import { useCustomer } from "@/context/CustomerContext";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +22,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import type { CustomerAddress } from "@shared/schema";
+import type { CustomerAddress, Timeslot } from "@shared/schema";
 
 import fishImg from "@assets/Gemini_Generated_Image_w6wqkkw6wqkkw6wq_(1)_1772713077919.png";
 import prawnsImg from "@assets/Gemini_Generated_Image_5xy0sd5xy0sd5xy0_1772713090650.png";
@@ -105,7 +106,15 @@ export function CartDrawer() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "online">("cod");
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [selectedTimeslotId, setSelectedTimeslotId] = useState<string | null>(null);
   const [expandedInstructions, setExpandedInstructions] = useState<Record<number, boolean>>({});
+
+  const { data: timeslots = [], isLoading: timeslotsLoading } = useQuery<Timeslot[]>({
+    queryKey: ["/api/timeslots"],
+    enabled: isCartOpen,
+  });
+
+  const selectedTimeslot = timeslots.find(t => t.id === selectedTimeslotId) ?? null;
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [addForm, setAddForm] = useState(emptyForm);
@@ -301,8 +310,15 @@ export function CartDrawer() {
   const placeOrder = () => {
     const selected = savedAddresses.find(a => a.id === activeAddressId);
     if (!selected) return;
+    if (!selectedTimeslot) {
+      toast({ title: "Please select a delivery time slot", variant: "destructive" });
+      return;
+    }
     const fullAddress = [selected.building, selected.street, selected.area, selected.pincode].filter(Boolean).join(", ");
     const orderItems = items.map(i => ({ productId: i.id, quantity: i.quantity, name: i.name, price: i.price }));
+    const slotLabel = selectedTimeslot.isInstant
+      ? "Instant Delivery (Porter)"
+      : `${selectedTimeslot.label} (${selectedTimeslot.startTime} – ${selectedTimeslot.endTime})`;
     createOrder(
       {
         customerName: selected.name || customer?.name || "",
@@ -311,6 +327,9 @@ export function CartDrawer() {
         address: fullAddress,
         notes: selected.instructions,
         items: orderItems,
+        deliveryType: selectedTimeslot.isInstant ? "instant" : "slot",
+        timeslotLabel: slotLabel,
+        instantDeliveryCharge: selectedTimeslot.isInstant ? selectedTimeslot.extraCharge : null,
       },
       { onSuccess: () => { setIsSuccess(true); clearCart(); } }
     );
@@ -442,12 +461,21 @@ export function CartDrawer() {
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Delivery fee</span>
-                          <span className="font-semibold text-emerald-600">FREE</span>
+                          {selectedTimeslot?.isInstant && (selectedTimeslot.extraCharge ?? 0) > 0 ? (
+                            <span className="font-semibold text-amber-600">+₹{selectedTimeslot.extraCharge}</span>
+                          ) : (
+                            <span className="font-semibold text-emerald-600">FREE</span>
+                          )}
                         </div>
+                        {selectedTimeslot?.isInstant && (selectedTimeslot.extraCharge ?? 0) > 0 && (
+                          <p className="text-[11px] text-amber-600/80 italic">Instant delivery via Porter — extra charges apply</p>
+                        )}
                       </div>
                       <div className="pt-2 border-t border-border/40 flex justify-between items-center">
                         <span className="font-bold text-foreground">Total</span>
-                        <span className="text-lg font-bold text-primary">₹{totalPrice}</span>
+                        <span className="text-lg font-bold text-primary">
+                          ₹{totalPrice + (selectedTimeslot?.isInstant ? (selectedTimeslot.extraCharge ?? 0) : 0)}
+                        </span>
                       </div>
                     </div>
 
@@ -511,6 +539,58 @@ export function CartDrawer() {
                       )}
                     </div>
 
+                    {/* Delivery Time Slot */}
+                    <div className="px-4 mt-5 mb-2">
+                      <h3 className="font-semibold text-foreground text-sm flex items-center gap-1.5 mb-3">
+                        <Clock className="w-4 h-4 text-primary" /> Delivery Time Slot
+                      </h3>
+                      {timeslotsLoading ? (
+                        <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
+                          <Loader2 className="w-4 h-4 animate-spin" /> Loading slots...
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {timeslots.map(slot => (
+                            <button
+                              key={slot.id}
+                              type="button"
+                              onClick={() => setSelectedTimeslotId(slot.id)}
+                              className={`w-full text-left p-3.5 rounded-xl border-2 transition-all ${selectedTimeslotId === slot.id ? (slot.isInstant ? "border-amber-500 bg-amber-50" : "border-primary bg-primary/5") : "border-border/40 bg-white hover:border-primary/30"}`}
+                              data-testid={`timeslot-${slot.id}`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedTimeslotId === slot.id ? (slot.isInstant ? "border-amber-500" : "border-primary") : "border-slate-300"}`}>
+                                  {selectedTimeslotId === slot.id && <div className={`w-2 h-2 rounded-full ${slot.isInstant ? "bg-amber-500" : "bg-primary"}`} />}
+                                </div>
+                                {slot.isInstant ? (
+                                  <Zap className="w-4 h-4 text-amber-500 shrink-0" />
+                                ) : (
+                                  <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className={`text-sm font-semibold ${slot.isInstant ? "text-amber-700" : "text-foreground"}`}>
+                                      {slot.label}
+                                    </span>
+                                    {slot.isInstant && (slot.extraCharge ?? 0) > 0 ? (
+                                      <span className="text-xs font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">+₹{slot.extraCharge}</span>
+                                    ) : !slot.isInstant ? (
+                                      <span className="text-xs font-semibold text-emerald-600">FREE</span>
+                                    ) : null}
+                                  </div>
+                                  {slot.isInstant ? (
+                                    <p className="text-xs text-amber-600/70 mt-0.5">Delivered immediately via Porter</p>
+                                  ) : slot.startTime && slot.endTime ? (
+                                    <p className="text-xs text-muted-foreground mt-0.5">{slot.startTime} – {slot.endTime}</p>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
                     {/* Payment Method */}
                     <div className="px-4 mt-5 mb-4 space-y-3">
                       <h3 className="font-semibold text-foreground text-sm">Payment Method</h3>
@@ -541,7 +621,12 @@ export function CartDrawer() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-xs text-muted-foreground">Total</p>
-                        <p className="text-xl font-bold text-primary">₹{totalPrice}</p>
+                        <p className="text-xl font-bold text-primary">
+                          ₹{totalPrice + (selectedTimeslot?.isInstant ? (selectedTimeslot.extraCharge ?? 0) : 0)}
+                        </p>
+                        {selectedTimeslot?.isInstant && (selectedTimeslot.extraCharge ?? 0) > 0 && (
+                          <p className="text-[10px] text-amber-600">incl. ₹{selectedTimeslot.extraCharge} instant delivery</p>
+                        )}
                       </div>
                       <Button
                         onClick={placeOrder}
@@ -557,6 +642,9 @@ export function CartDrawer() {
                     )}
                     {customer && savedAddresses.length === 0 && (
                       <p className="text-xs text-center text-muted-foreground mt-2">Please add a delivery address to proceed</p>
+                    )}
+                    {customer && savedAddresses.length > 0 && !selectedTimeslot && (
+                      <p className="text-xs text-center text-muted-foreground mt-2">Please select a delivery time slot</p>
                     )}
                   </div>
                 </div>

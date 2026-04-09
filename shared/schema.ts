@@ -90,6 +90,17 @@ export type OrderItem = {
   price: number | null;
 };
 
+export type Timeslot = {
+  id: string;
+  label: string;
+  startTime: string | null;
+  endTime: string | null;
+  isInstant: boolean;
+  extraCharge: number;
+  isActive: boolean;
+  sortOrder: number;
+};
+
 export type OrderRequest = {
   id: string;
   customerName: string;
@@ -100,6 +111,9 @@ export type OrderRequest = {
   status: string;
   notes: string | null;
   createdAt: Date;
+  deliveryType?: string | null;
+  timeslotLabel?: string | null;
+  instantDeliveryCharge?: number | null;
 };
 
 export type InsertOrderRequest = {
@@ -110,6 +124,9 @@ export type InsertOrderRequest = {
   items: OrderItem[];
   notes?: string | null;
   hubDbName?: string | null;
+  deliveryType?: string | null;
+  timeslotLabel?: string | null;
+  instantDeliveryCharge?: number | null;
 };
 
 export type InventoryBatch = {
@@ -176,6 +193,9 @@ export const insertOrderRequestSchema = z.object({
   })).min(1, "At least one item is required"),
   notes: z.string().nullable().optional(),
   hubDbName: z.string().nullable().optional(),
+  deliveryType: z.string().nullable().optional(),
+  timeslotLabel: z.string().nullable().optional(),
+  instantDeliveryCharge: z.number().nullable().optional(),
 });
 
 export const insertUserSchema = z.object({

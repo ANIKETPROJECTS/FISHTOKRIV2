@@ -618,6 +618,67 @@ export async function registerRoutes(
     res.status(204).end();
   });
 
+  // ── Timeslot routes ─────────────────────────────────────────────────────
+  const DEFAULT_TIMESLOTS = [
+    { label: "Morning Delivery", startTime: "7:00 AM", endTime: "10:00 AM", isInstant: false, extraCharge: 0, isActive: true, sortOrder: 1 },
+    { label: "Midday Delivery", startTime: "11:00 AM", endTime: "1:00 PM", isInstant: false, extraCharge: 0, isActive: true, sortOrder: 2 },
+    { label: "Afternoon Delivery", startTime: "2:00 PM", endTime: "5:00 PM", isInstant: false, extraCharge: 0, isActive: true, sortOrder: 3 },
+    { label: "Evening Delivery", startTime: "6:00 PM", endTime: "9:00 PM", isInstant: false, extraCharge: 0, isActive: true, sortOrder: 4 },
+  ];
+
+  const INSTANT_TIMESLOT = {
+    id: "instant",
+    label: "Instant Delivery",
+    startTime: null,
+    endTime: null,
+    isInstant: true,
+    extraCharge: 49,
+    isActive: true,
+    sortOrder: 0,
+  };
+
+  const toTimeslot = (doc: any) => ({
+    id: doc._id.toString(),
+    label: doc.label,
+    startTime: doc.startTime ?? null,
+    endTime: doc.endTime ?? null,
+    isInstant: doc.isInstant ?? false,
+    extraCharge: doc.extraCharge ?? 0,
+    isActive: doc.isActive ?? true,
+    sortOrder: doc.sortOrder ?? 0,
+  });
+
+  app.get("/api/timeslots", async (req, res) => {
+    try {
+      const hub = await getReqHubModels(req);
+      if (!hub) return res.json([INSTANT_TIMESLOT, ...DEFAULT_TIMESLOTS.map((s, i) => ({ ...s, id: `default-${i}` }))]);
+      let docs = await hub.Timeslot.find({ isActive: true }).sort({ sortOrder: 1 }).lean();
+      // Auto-seed defaults if no timeslots exist yet
+      if (docs.length === 0) {
+        await hub.Timeslot.insertMany(DEFAULT_TIMESLOTS);
+        docs = await hub.Timeslot.find({ isActive: true }).sort({ sortOrder: 1 }).lean();
+      }
+      // Always prepend instant delivery
+      res.json([INSTANT_TIMESLOT, ...docs.map(toTimeslot)]);
+    } catch {
+      res.json([INSTANT_TIMESLOT, ...DEFAULT_TIMESLOTS.map((s, i) => ({ ...s, id: `default-${i}` }))]);
+    }
+  });
+
+  // Seed default timeslots into the hub DB (admin only)
+  app.post("/api/timeslots/seed", requireAuth, async (req, res) => {
+    try {
+      const hub = await getReqHubModels(req);
+      if (!hub) return res.status(400).json({ message: "No hub selected" });
+      await hub.Timeslot.deleteMany({ isInstant: { $ne: true } });
+      await hub.Timeslot.insertMany(DEFAULT_TIMESLOTS);
+      const docs = await hub.Timeslot.find({ isActive: true }).sort({ sortOrder: 1 }).lean();
+      res.json([INSTANT_TIMESLOT, ...docs.map(toTimeslot)]);
+    } catch (err) {
+      res.status(500).json({ message: "Failed to seed timeslots" });
+    }
+  });
+
   // ── Customer auth & profile routes ──────────────────────────────────────
 
   const requireCustomer = (req: any, res: any, next: any) => {

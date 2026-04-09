@@ -13,6 +13,9 @@ const orderSchema = new mongoose.Schema({
   status: { type: String, default: "pending" },
   notes: { type: String, default: null },
   createdAt: { type: Date, default: Date.now },
+  deliveryType: { type: String, default: null },
+  timeslotLabel: { type: String, default: null },
+  instantDeliveryCharge: { type: Number, default: null },
 });
 
 export async function connectOrdersDb() {

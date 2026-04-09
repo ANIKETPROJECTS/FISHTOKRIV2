@@ -100,12 +100,23 @@ const comboSchema = new mongoose.Schema({
   sortOrder: { type: Number, default: 0 },
 });
 
+const timeslotSchema = new mongoose.Schema({
+  label: { type: String, required: true },
+  startTime: { type: String, default: null },
+  endTime: { type: String, default: null },
+  isInstant: { type: Boolean, default: false },
+  extraCharge: { type: Number, default: 0 },
+  isActive: { type: Boolean, default: true },
+  sortOrder: { type: Number, default: 0 },
+});
+
 export interface HubModels {
   Product: mongoose.Model<any>;
   Section: mongoose.Model<any>;
   Carousel: mongoose.Model<any>;
   Category: mongoose.Model<any>;
   Combo: mongoose.Model<any>;
+  Timeslot: mongoose.Model<any>;
 }
 
 export async function getHubModels(dbName: string): Promise<HubModels> {
@@ -127,5 +138,6 @@ export async function getHubModels(dbName: string): Promise<HubModels> {
     Carousel: getModel("Carousel", carouselSchema),
     Category: getModel("Category", categorySchema),
     Combo: getModel("Combo", comboSchema),
+    Timeslot: getModel("Timeslot", timeslotSchema),
   };
 }

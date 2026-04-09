@@ -69,6 +69,9 @@ function toOrder(doc: any): OrderRequest {
     status: doc.status,
     notes: doc.notes ?? null,
     createdAt: doc.createdAt,
+    deliveryType: doc.deliveryType ?? null,
+    timeslotLabel: doc.timeslotLabel ?? null,
+    instantDeliveryCharge: doc.instantDeliveryCharge ?? null,
   };
 }
 
